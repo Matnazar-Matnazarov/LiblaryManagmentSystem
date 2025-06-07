@@ -1,0 +1,64 @@
+# Core Django packages
+Django==5.2.2
+djangorestframework==3.16.0
+django-cors-headers==4.7.0
+django-filter==25.1
+djangorestframework-simplejwt==5.5.0
+
+# Database & ORM
+psycopg2-binary==2.9.10
+django-extensions
+
+# Caching & Task Queue
+redis==6.2.0
+celery==5.5.3
+django-celery-beat==2.8.1
+django-celery-results==2.6.0
+
+# Authentication & Security
+django-allauth==65.9.0
+cryptography
+
+# API Documentation
+drf-spectacular==0.28.0
+drf-spectacular-sidecar
+
+# File handling & Media
+Pillow==11.2.1
+
+# Search
+django-elasticsearch-dsl
+elasticsearch-dsl
+
+# Utilities
+requests==2.32.3
+pydantic
+typing-extensions
+
+# Development & Testing
+factory-boy==3.3.3
+faker
+pytest==8.4.0
+pytest-django==4.11.1
+
+
+# Code Quality
+black==25.1.0
+isort==6.0.1
+flake8==7.2.0
+django-stubs
+
+# Production
+gunicorn
+whitenoise
+sentry-sdk
+
+# Monitoring
+django-prometheus
+
+# Email
+sendgrid
+
+
+# Environment
+environs==14.2.0

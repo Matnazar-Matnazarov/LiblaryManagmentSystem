@@ -1,0 +1,311 @@
+# =====================================================
+# LIBRARY MANAGEMENT SYSTEM - GIT IGNORE
+# =====================================================
+# Professional .gitignore for Django Backend
+# =====================================================
+
+# =====================================================
+# ENVIRONMENT AND SECRETS
+# =====================================================
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+secrets/
+credentials/
+
+# =====================================================
+# PYTHON SPECIFIC
+# =====================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# =====================================================
+# DJANGO SPECIFIC
+# =====================================================
+# Database
+*.sqlite3
+*.sqlite3-journal
+db.sqlite3
+db.sqlite3-journal
+
+# Media files (uploads)
+/media/
+media/
+
+# Static files (collected)
+/staticfiles/
+/static_collected/
+staticfiles/
+
+# Local settings
+local_settings.py
+
+# Django migrations (optional - comment if you want to track them)
+# */migrations/*.py
+# */migrations/*.pyc
+# !*/migrations/__init__.py
+
+# =====================================================
+# LOGS AND DEBUGGING
+# =====================================================
+*.log
+logs/
+log/
+*.out
+*.err
+
+# Django debug toolbar
+debug/
+
+# =====================================================
+# TESTING
+# =====================================================
+.coverage
+.pytest_cache/
+.tox/
+htmlcov/
+.coverage.*
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# =====================================================
+# VIRTUAL ENVIRONMENTS
+# =====================================================
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+pip-selfcheck.json
+
+# =====================================================
+# IDE AND EDITOR FILES
+# =====================================================
+# VS Code
+.vscode/
+*.code-workspace
+
+# PyCharm
+.idea/
+*.iml
+*.iws
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# =====================================================
+# SYSTEM FILES
+# =====================================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msm
+*.msp
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# =====================================================
+# DOCKER
+# =====================================================
+.dockerignore
+docker-compose.override.yml
+.docker/
+
+# =====================================================
+# NODE.JS (if using for frontend build tools)
+# =====================================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# =====================================================
+# REDIS DUMPS
+# =====================================================
+dump.rdb
+
+# =====================================================
+# CELERY
+# =====================================================
+celerybeat-schedule
+celerybeat.pid
+
+# =====================================================
+# BACKUP FILES
+# =====================================================
+*.bak
+*.backup
+*.sql
+*.dump
+
+# =====================================================
+# TEMPORARY FILES
+# =====================================================
+*.tmp
+*.temp
+temp/
+tmp/
+
+# =====================================================
+# PROFILING
+# =====================================================
+.prof
+
+# =====================================================
+# JUPYTER NOTEBOOKS
+# =====================================================
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+# =====================================================
+# MYPY
+# =====================================================
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# =====================================================
+# ROPE
+# =====================================================
+.ropeproject
+
+# =====================================================
+# SPYDER
+# =====================================================
+.spyderproject
+.spyproject
+
+# =====================================================
+# CUSTOM PROJECT FILES
+# =====================================================
+# Documentation builds
+docs/_build/
+site/
+
+# Configuration backups
+config_backup/
+
+# User uploads for testing
+test_uploads/
+
+# Local scripts
+scripts/local/
+
+# =====================================================
+# SECURITY SCANS
+# =====================================================
+bandit-report.json
+safety-report.json
+
+# =====================================================
+# PERFORMANCE REPORTS
+# =====================================================
+.benchmarks/
+
+# =====================================================
+# ELASTICSEARCH
+# =====================================================
+elasticsearch/
+
+# =====================================================
+# DEPLOYMENT
+# =====================================================
+deploy.log
+deployment/
+
+# =====================================================
+# MONITORING
+# =====================================================
+monitoring/data/
+
+# =====================================================
+# SSL CERTIFICATES
+# =====================================================
+*.crt
+*.cert
+*.pem
+ssl/
+
+# =====================================================
+# COMPILED TRANSLATIONS
+# =====================================================
+*.mo
+
+# =====================================================
+# NOTES
+# =====================================================
+# Add any project-specific files or patterns below
+# Remember to never commit sensitive information
+# ===================================================== 

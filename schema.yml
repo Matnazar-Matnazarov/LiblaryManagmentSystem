@@ -1,0 +1,2575 @@
+openapi: 3.0.3
+info:
+  title: Library Management System API
+  version: 1.0.0
+  description: A comprehensive library management system with modern features
+paths:
+  /api/v1/auth/change-password/:
+    post:
+      operationId: v1_auth_change_password_create
+      description: Change user password
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePassword'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChangePassword'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChangePassword'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                message: Password changed successfully
+          description: ''
+  /api/v1/auth/google/:
+    post:
+      operationId: v1_auth_google_create
+      description: Authenticate with Google OAuth and get JWT tokens
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoogleAuth'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GoogleAuth'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/GoogleAuth'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access:
+                    type: string
+                  refresh:
+                    type: string
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      email:
+                        type: string
+                      username:
+                        type: string
+                      role:
+                        type: string
+          description: ''
+  /api/v1/auth/login/:
+    post:
+      operationId: v1_auth_login_create
+      description: Login with email/username and password
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Login'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Login'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Login'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access:
+                    type: string
+                  refresh:
+                    type: string
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      email:
+                        type: string
+                      username:
+                        type: string
+                      role:
+                        type: string
+          description: ''
+  /api/v1/auth/profile/:
+    get:
+      operationId: v1_auth_profile_retrieve
+      description: Get current user profile
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          description: ''
+    put:
+      operationId: v1_auth_profile_update
+      description: Update current user profile
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfile'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserProfile'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserProfile'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          description: ''
+    patch:
+      operationId: v1_auth_profile_partial_update
+      description: Partially update current user profile
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfile'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfile'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfile'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          description: ''
+  /api/v1/auth/register/:
+    post:
+      operationId: v1_auth_register_create
+      description: Register a new user
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegistration'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRegistration'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRegistration'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access:
+                    type: string
+                  refresh:
+                    type: string
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      email:
+                        type: string
+                      username:
+                        type: string
+                      role:
+                        type: string
+          description: ''
+  /api/v1/auth/token/:
+    post:
+      operationId: v1_auth_token_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /api/v1/auth/token/refresh/:
+    post:
+      operationId: v1_auth_token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/v1/auth/token/verify/:
+    post:
+      operationId: v1_auth_token_verify_create
+      description: |-
+        Takes a token and indicates if it is valid.  This view provides no
+        information about a token's fitness for a particular use.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenVerify'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenVerify'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenVerify'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenVerify'
+          description: ''
+  /api/v1/auth/users/:
+    get:
+      operationId: v1_auth_users_list
+      description: List all users
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserList'
+          description: ''
+    post:
+      operationId: v1_auth_users_create
+      description: Create a new user
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserCreate'
+          description: ''
+  /api/v1/auth/users/{id}/:
+    get:
+      operationId: v1_auth_users_retrieve
+      description: Get user details
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this User.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetail'
+          description: ''
+    put:
+      operationId: v1_auth_users_update
+      description: Update user
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this User.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserDetail'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserDetail'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserDetail'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetail'
+          description: ''
+    patch:
+      operationId: v1_auth_users_partial_update
+      description: ViewSet for managing users with role-based permissions
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this User.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserDetail'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserDetail'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserDetail'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetail'
+          description: ''
+    delete:
+      operationId: v1_auth_users_destroy
+      description: Delete user
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this User.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/auth/users/me/:
+    get:
+      operationId: v1_auth_users_me_retrieve
+      description: Get current user's profile
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/v1/books/authors/:
+    get:
+      operationId: v1_books_authors_list
+      description: List all authors with book statistics
+      summary: Get authors list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAuthorList'
+          description: ''
+    post:
+      operationId: v1_books_authors_create
+      description: Create a new author
+      summary: Create new author
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Author'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Author'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Author'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Author'
+          description: ''
+  /api/v1/books/authors/{id}/:
+    get:
+      operationId: v1_books_authors_retrieve
+      description: Get author details with books
+      summary: Get author details
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this author.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Author'
+          description: ''
+    put:
+      operationId: v1_books_authors_update
+      description: Update author information
+      summary: Update author
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this author.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Author'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Author'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Author'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Author'
+          description: ''
+    patch:
+      operationId: v1_books_authors_partial_update
+      description: Professional ViewSet for managing authors with optimizations
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this author.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAuthor'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAuthor'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAuthor'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Author'
+          description: ''
+    delete:
+      operationId: v1_books_authors_destroy
+      description: Delete author
+      summary: Delete author
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this author.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/books/books/:
+    get:
+      operationId: v1_books_books_list
+      description: List all books with advanced filtering, search and pagination
+      summary: Get books list
+      parameters:
+      - in: query
+        name: available_copies
+        schema:
+          type: integer
+      - in: query
+        name: available_copies__gte
+        schema:
+          type: integer
+      - in: query
+        name: available_copies__lte
+        schema:
+          type: integer
+      - in: query
+        name: category
+        schema:
+          type: integer
+      - in: query
+        name: format
+        schema:
+          type: string
+          enum:
+          - audiobook
+          - ebook
+          - hardcover
+          - paperback
+        description: |-
+          * `hardcover` - Hardcover
+          * `paperback` - Paperback
+          * `ebook` - E-book
+          * `audiobook` - Audiobook
+      - in: query
+        name: language
+        schema:
+          type: string
+          enum:
+          - ar
+          - en
+          - other
+          - ru
+          - uz
+        description: |-
+          * `en` - English
+          * `uz` - Uzbek
+          * `ru` - Russian
+          * `ar` - Arabic
+          * `other` - Other
+      - in: query
+        name: language__icontains
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: publication_year
+        schema:
+          type: integer
+      - in: query
+        name: publication_year__gte
+        schema:
+          type: integer
+      - in: query
+        name: publication_year__lte
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - available
+          - borrowed
+          - damaged
+          - lost
+          - maintenance
+          - reserved
+        description: |-
+          * `available` - Available
+          * `borrowed` - Borrowed
+          * `reserved` - Reserved
+          * `maintenance` - Under Maintenance
+          * `lost` - Lost
+          * `damaged` - Damaged
+      - in: query
+        name: total_copies
+        schema:
+          type: integer
+      - in: query
+        name: total_copies__gte
+        schema:
+          type: integer
+      - in: query
+        name: total_copies__lte
+        schema:
+          type: integer
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBookListList'
+          description: ''
+    post:
+      operationId: v1_books_books_create
+      description: Create a new book with authors, category and publisher
+      summary: Create new book
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookCreateUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BookCreateUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BookCreateUpdate'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookCreateUpdate'
+          description: ''
+  /api/v1/books/books/{id}/:
+    get:
+      operationId: v1_books_books_retrieve
+      description: Get detailed book information including authors and statistics
+      summary: Get book details
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this book.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookDetail'
+          description: ''
+    put:
+      operationId: v1_books_books_update
+      description: Update book information completely
+      summary: Update book
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this book.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookCreateUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BookCreateUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BookCreateUpdate'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookCreateUpdate'
+          description: ''
+    patch:
+      operationId: v1_books_books_partial_update
+      description: Partially update book information
+      summary: Partially update book
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this book.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedBookCreateUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedBookCreateUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedBookCreateUpdate'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookCreateUpdate'
+          description: ''
+    delete:
+      operationId: v1_books_books_destroy
+      description: Delete book from the system
+      summary: Delete book
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this book.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/books/books/available/:
+    get:
+      operationId: v1_books_books_available_retrieve
+      description: Get available books only
+      summary: List available books
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookList'
+          description: ''
+  /api/v1/books/books/search/:
+    get:
+      operationId: v1_books_books_search_retrieve
+      description: Search books by multiple criteria
+      summary: Advanced book search
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookList'
+          description: ''
+  /api/v1/books/categories/:
+    get:
+      operationId: v1_books_categories_list
+      description: List all categories with book statistics
+      summary: Get categories list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCategoryList'
+          description: ''
+    post:
+      operationId: v1_books_categories_create
+      description: Create a new category
+      summary: Create new category
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Category'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Category'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Category'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+  /api/v1/books/categories/{id}/:
+    get:
+      operationId: v1_books_categories_retrieve
+      description: Get category details with books
+      summary: Get category details
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this category.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+    put:
+      operationId: v1_books_categories_update
+      description: Update category information
+      summary: Update category
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this category.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Category'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Category'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Category'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+    patch:
+      operationId: v1_books_categories_partial_update
+      description: Professional ViewSet for managing categories with optimizations
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this category.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCategory'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCategory'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCategory'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+    delete:
+      operationId: v1_books_categories_destroy
+      description: Delete category
+      summary: Delete category
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this category.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/books/publishers/:
+    get:
+      operationId: v1_books_publishers_list
+      description: List all publishers with book statistics
+      summary: Get publishers list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPublisherList'
+          description: ''
+    post:
+      operationId: v1_books_publishers_create
+      description: Create a new publisher
+      summary: Create new publisher
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Publisher'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Publisher'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Publisher'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Publisher'
+          description: ''
+  /api/v1/books/publishers/{id}/:
+    get:
+      operationId: v1_books_publishers_retrieve
+      description: Get publisher details with books
+      summary: Get publisher details
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this publisher.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Publisher'
+          description: ''
+    put:
+      operationId: v1_books_publishers_update
+      description: Update publisher information
+      summary: Update publisher
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this publisher.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Publisher'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Publisher'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Publisher'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Publisher'
+          description: ''
+    patch:
+      operationId: v1_books_publishers_partial_update
+      description: Professional ViewSet for managing publishers with optimizations
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this publisher.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPublisher'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPublisher'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPublisher'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Publisher'
+          description: ''
+    delete:
+      operationId: v1_books_publishers_destroy
+      description: Delete publisher
+      summary: Delete publisher
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this publisher.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+components:
+  schemas:
+    AccountStatusEnum:
+      enum:
+      - active
+      - inactive
+      - suspended
+      - pending_activation
+      type: string
+      description: |-
+        * `active` - Active
+        * `inactive` - Inactive
+        * `suspended` - Suspended
+        * `pending_activation` - Pending Activation
+    Author:
+      type: object
+      description: Professional serializer for Author model with optimized fields
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 200
+        biography:
+          type: string
+        birth_date:
+          type: string
+          format: date
+          nullable: true
+        death_date:
+          type: string
+          format: date
+          nullable: true
+        nationality:
+          type: string
+          maxLength: 100
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - name
+      - updated_at
+    BlankEnum:
+      enum:
+      - ''
+    BookCreateUpdate:
+      type: object
+      description: Professional serializer for creating and updating books
+      properties:
+        title:
+          type: string
+          maxLength: 500
+        subtitle:
+          type: string
+          maxLength: 500
+        isbn:
+          type: string
+          maxLength: 17
+        description:
+          type: string
+        author_ids:
+          type: array
+          items:
+            type: integer
+            writeOnly: true
+          writeOnly: true
+          description: List of author IDs to associate with this book
+        category_id:
+          type: integer
+          writeOnly: true
+          nullable: true
+          description: Category ID for this book
+        publisher_id:
+          type: integer
+          writeOnly: true
+          nullable: true
+          description: Publisher ID for this book
+        publication_year:
+          type: integer
+          maximum: 2030
+          minimum: 1000
+          nullable: true
+        edition:
+          type: string
+          maxLength: 50
+        language:
+          $ref: '#/components/schemas/LanguageEnum'
+        pages:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        format:
+          $ref: '#/components/schemas/FormatEnum'
+        total_copies:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        available_copies:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        location:
+          type: string
+          description: Shelf location
+          maxLength: 100
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        cover_image:
+          type: string
+          format: uri
+      required:
+      - author_ids
+      - category_id
+      - publisher_id
+      - title
+    BookDetail:
+      type: object
+      description: Comprehensive serializer for book detail view with full information
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        title:
+          type: string
+          maxLength: 500
+        subtitle:
+          type: string
+          maxLength: 500
+        isbn:
+          type: string
+          maxLength: 17
+        description:
+          type: string
+        authors:
+          type: array
+          items:
+            $ref: '#/components/schemas/Author'
+          readOnly: true
+        category:
+          allOf:
+          - $ref: '#/components/schemas/Category'
+          readOnly: true
+        publisher:
+          allOf:
+          - $ref: '#/components/schemas/Publisher'
+          readOnly: true
+        publication_year:
+          type: integer
+          maximum: 2030
+          minimum: 1000
+          nullable: true
+        edition:
+          type: string
+          maxLength: 50
+        language:
+          $ref: '#/components/schemas/LanguageEnum'
+        pages:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        format:
+          $ref: '#/components/schemas/FormatEnum'
+        total_copies:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        available_copies:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        location:
+          type: string
+          description: Shelf location
+          maxLength: 100
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        cover_image:
+          type: string
+          format: uri
+        availability_info:
+          readOnly: true
+        loan_statistics:
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - authors
+      - availability_info
+      - category
+      - created_at
+      - id
+      - loan_statistics
+      - publisher
+      - title
+      - updated_at
+    BookList:
+      type: object
+      description: Optimized serializer for book list view with minimal data
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        title:
+          type: string
+          maxLength: 500
+        subtitle:
+          type: string
+          maxLength: 500
+        isbn:
+          type: string
+          maxLength: 17
+        authors_display:
+          type: string
+          readOnly: true
+        category_name:
+          type: string
+          readOnly: true
+        publisher_name:
+          type: string
+          readOnly: true
+        publication_year:
+          type: integer
+          maximum: 2030
+          minimum: 1000
+          nullable: true
+        language:
+          $ref: '#/components/schemas/LanguageEnum'
+        format:
+          $ref: '#/components/schemas/FormatEnum'
+        availability_status:
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - authors_display
+      - availability_status
+      - category_name
+      - created_at
+      - id
+      - publisher_name
+      - title
+    Category:
+      type: object
+      description: Professional serializer for Category model with books count
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+        books_count:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - books_count
+      - created_at
+      - id
+      - name
+      - updated_at
+    ChangePassword:
+      type: object
+      description: Serializer for password change
+      properties:
+        old_password:
+          type: string
+        new_password:
+          type: string
+          minLength: 8
+        confirm_password:
+          type: string
+      required:
+      - confirm_password
+      - new_password
+      - old_password
+    EmailVerificationStatusEnum:
+      enum:
+      - pending
+      - approved
+      - rejected
+      - expired
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `approved` - Approved
+        * `rejected` - Rejected
+        * `expired` - Expired
+    FormatEnum:
+      enum:
+      - hardcover
+      - paperback
+      - ebook
+      - audiobook
+      type: string
+      description: |-
+        * `hardcover` - Hardcover
+        * `paperback` - Paperback
+        * `ebook` - E-book
+        * `audiobook` - Audiobook
+    GenderEnum:
+      enum:
+      - male
+      - female
+      - other
+      - prefer_not_to_say
+      type: string
+      description: |-
+        * `male` - Male
+        * `female` - Female
+        * `other` - Other
+        * `prefer_not_to_say` - Prefer not to say
+    GoogleAuth:
+      type: object
+      description: Serializer for Google OAuth authentication
+      properties:
+        token:
+          type: string
+      required:
+      - token
+    LanguageEnum:
+      enum:
+      - en
+      - uz
+      - ru
+      - ar
+      - other
+      type: string
+      description: |-
+        * `en` - English
+        * `uz` - Uzbek
+        * `ru` - Russian
+        * `ar` - Arabic
+        * `other` - Other
+    Login:
+      type: object
+      description: Serializer for user login
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          writeOnly: true
+      required:
+      - email
+      - password
+    PaginatedAuthorList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Author'
+    PaginatedBookListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/BookList'
+    PaginatedCategoryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+    PaginatedPublisherList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Publisher'
+    PaginatedUserList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+    PatchedAuthor:
+      type: object
+      description: Professional serializer for Author model with optimized fields
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 200
+        biography:
+          type: string
+        birth_date:
+          type: string
+          format: date
+          nullable: true
+        death_date:
+          type: string
+          format: date
+          nullable: true
+        nationality:
+          type: string
+          maxLength: 100
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedBookCreateUpdate:
+      type: object
+      description: Professional serializer for creating and updating books
+      properties:
+        title:
+          type: string
+          maxLength: 500
+        subtitle:
+          type: string
+          maxLength: 500
+        isbn:
+          type: string
+          maxLength: 17
+        description:
+          type: string
+        author_ids:
+          type: array
+          items:
+            type: integer
+            writeOnly: true
+          writeOnly: true
+          description: List of author IDs to associate with this book
+        category_id:
+          type: integer
+          writeOnly: true
+          nullable: true
+          description: Category ID for this book
+        publisher_id:
+          type: integer
+          writeOnly: true
+          nullable: true
+          description: Publisher ID for this book
+        publication_year:
+          type: integer
+          maximum: 2030
+          minimum: 1000
+          nullable: true
+        edition:
+          type: string
+          maxLength: 50
+        language:
+          $ref: '#/components/schemas/LanguageEnum'
+        pages:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        format:
+          $ref: '#/components/schemas/FormatEnum'
+        total_copies:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        available_copies:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        location:
+          type: string
+          description: Shelf location
+          maxLength: 100
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        cover_image:
+          type: string
+          format: uri
+    PatchedCategory:
+      type: object
+      description: Professional serializer for Category model with books count
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+        books_count:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedPublisher:
+      type: object
+      description: Professional serializer for Publisher model
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 200
+        address:
+          type: string
+        city:
+          type: string
+          maxLength: 100
+        country:
+          type: string
+          maxLength: 100
+        website:
+          type: string
+          format: uri
+          maxLength: 200
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        books_count:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedUserDetail:
+      type: object
+      description: Detailed serializer for User model
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        username:
+          type: string
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        middle_name:
+          type: string
+          maxLength: 150
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          description: |-
+            User role determines access permissions
+
+            * `super_admin` - Super Administrator
+            * `librarian` - Librarian
+            * `teacher` - Teacher
+            * `student` - Student
+            * `member` - Library Member
+        account_status:
+          $ref: '#/components/schemas/AccountStatusEnum'
+        date_of_birth:
+          type: string
+          format: date
+          nullable: true
+        gender:
+          oneOf:
+          - $ref: '#/components/schemas/GenderEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        phone_number:
+          type: string
+          nullable: true
+          description: 'Format: +998901234567 or 901234567'
+          pattern: ^(?:\+998)?[0-9]{9}$
+          maxLength: 20
+        address_line_1:
+          type: string
+          maxLength: 255
+        address_line_2:
+          type: string
+          maxLength: 255
+        city:
+          type: string
+          maxLength: 100
+        country:
+          type: string
+          maxLength: 100
+        postal_code:
+          type: string
+          maxLength: 20
+        profession_category:
+          oneOf:
+          - $ref: '#/components/schemas/ProfessionCategoryEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        profession_title:
+          type: string
+          description: e.g., Software Engineer, Teacher, Student
+          maxLength: 100
+        workplace_organization:
+          type: string
+          title: Workplace/Organization
+          maxLength: 200
+        email_verification_status:
+          $ref: '#/components/schemas/EmailVerificationStatusEnum'
+        phone_verification_status:
+          $ref: '#/components/schemas/PhoneVerificationStatusEnum'
+        date_joined:
+          type: string
+          format: date-time
+          readOnly: true
+        last_login:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+    PatchedUserProfile:
+      type: object
+      description: Serializer for user profile updates
+      properties:
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        middle_name:
+          type: string
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        date_of_birth:
+          type: string
+          format: date
+          nullable: true
+        gender:
+          oneOf:
+          - $ref: '#/components/schemas/GenderEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        phone_number:
+          type: string
+          nullable: true
+          description: 'Format: +998901234567 or 901234567'
+          pattern: ^(?:\+998)?[0-9]{9}$
+          maxLength: 20
+        address_line_1:
+          type: string
+          maxLength: 255
+        address_line_2:
+          type: string
+          maxLength: 255
+        city:
+          type: string
+          maxLength: 100
+        country:
+          type: string
+          maxLength: 100
+        postal_code:
+          type: string
+          maxLength: 20
+        profession_category:
+          oneOf:
+          - $ref: '#/components/schemas/ProfessionCategoryEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        profession_title:
+          type: string
+          description: e.g., Software Engineer, Teacher, Student
+          maxLength: 100
+        workplace_organization:
+          type: string
+          title: Workplace/Organization
+          maxLength: 200
+    PhoneVerificationStatusEnum:
+      enum:
+      - pending
+      - approved
+      - rejected
+      - expired
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `approved` - Approved
+        * `rejected` - Rejected
+        * `expired` - Expired
+    ProfessionCategoryEnum:
+      enum:
+      - education
+      - healthcare
+      - technology
+      - research
+      - student
+      - other
+      type: string
+      description: |-
+        * `education` - Education
+        * `healthcare` - Healthcare
+        * `technology` - Technology
+        * `research` - Research
+        * `student` - Student
+        * `other` - Other
+    Publisher:
+      type: object
+      description: Professional serializer for Publisher model
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 200
+        address:
+          type: string
+        city:
+          type: string
+          maxLength: 100
+        country:
+          type: string
+          maxLength: 100
+        website:
+          type: string
+          format: uri
+          maxLength: 200
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        books_count:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - books_count
+      - created_at
+      - id
+      - name
+      - updated_at
+    RoleEnum:
+      enum:
+      - super_admin
+      - librarian
+      - teacher
+      - student
+      - member
+      type: string
+      description: |-
+        * `super_admin` - Super Administrator
+        * `librarian` - Librarian
+        * `teacher` - Teacher
+        * `student` - Student
+        * `member` - Library Member
+    StatusEnum:
+      enum:
+      - available
+      - borrowed
+      - reserved
+      - maintenance
+      - lost
+      - damaged
+      type: string
+      description: |-
+        * `available` - Available
+        * `borrowed` - Borrowed
+        * `reserved` - Reserved
+        * `maintenance` - Under Maintenance
+        * `lost` - Lost
+        * `damaged` - Damaged
+    TokenObtainPair:
+      type: object
+      properties:
+        email:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          readOnly: true
+      required:
+      - access
+      - email
+      - password
+      - refresh
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          writeOnly: true
+      required:
+      - access
+      - refresh
+    TokenVerify:
+      type: object
+      properties:
+        token:
+          type: string
+          writeOnly: true
+      required:
+      - token
+    User:
+      type: object
+      description: Serializer for User model
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        username:
+          type: string
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          description: |-
+            User role determines access permissions
+
+            * `super_admin` - Super Administrator
+            * `librarian` - Librarian
+            * `teacher` - Teacher
+            * `student` - Student
+            * `member` - Library Member
+        account_status:
+          $ref: '#/components/schemas/AccountStatusEnum'
+        date_joined:
+          type: string
+          format: date-time
+          readOnly: true
+        last_login:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - date_joined
+      - email
+      - id
+      - last_login
+      - username
+    UserCreate:
+      type: object
+      description: Serializer for creating new users
+      properties:
+        username:
+          type: string
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        password:
+          type: string
+          writeOnly: true
+        password_confirm:
+          type: string
+          writeOnly: true
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          description: |-
+            User role determines access permissions
+
+            * `super_admin` - Super Administrator
+            * `librarian` - Librarian
+            * `teacher` - Teacher
+            * `student` - Student
+            * `member` - Library Member
+      required:
+      - email
+      - password
+      - password_confirm
+      - username
+    UserDetail:
+      type: object
+      description: Detailed serializer for User model
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        username:
+          type: string
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        middle_name:
+          type: string
+          maxLength: 150
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          description: |-
+            User role determines access permissions
+
+            * `super_admin` - Super Administrator
+            * `librarian` - Librarian
+            * `teacher` - Teacher
+            * `student` - Student
+            * `member` - Library Member
+        account_status:
+          $ref: '#/components/schemas/AccountStatusEnum'
+        date_of_birth:
+          type: string
+          format: date
+          nullable: true
+        gender:
+          oneOf:
+          - $ref: '#/components/schemas/GenderEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        phone_number:
+          type: string
+          nullable: true
+          description: 'Format: +998901234567 or 901234567'
+          pattern: ^(?:\+998)?[0-9]{9}$
+          maxLength: 20
+        address_line_1:
+          type: string
+          maxLength: 255
+        address_line_2:
+          type: string
+          maxLength: 255
+        city:
+          type: string
+          maxLength: 100
+        country:
+          type: string
+          maxLength: 100
+        postal_code:
+          type: string
+          maxLength: 20
+        profession_category:
+          oneOf:
+          - $ref: '#/components/schemas/ProfessionCategoryEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        profession_title:
+          type: string
+          description: e.g., Software Engineer, Teacher, Student
+          maxLength: 100
+        workplace_organization:
+          type: string
+          title: Workplace/Organization
+          maxLength: 200
+        email_verification_status:
+          $ref: '#/components/schemas/EmailVerificationStatusEnum'
+        phone_verification_status:
+          $ref: '#/components/schemas/PhoneVerificationStatusEnum'
+        date_joined:
+          type: string
+          format: date-time
+          readOnly: true
+        last_login:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - date_joined
+      - email
+      - id
+      - last_login
+      - username
+    UserProfile:
+      type: object
+      description: Serializer for user profile updates
+      properties:
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        middle_name:
+          type: string
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        date_of_birth:
+          type: string
+          format: date
+          nullable: true
+        gender:
+          oneOf:
+          - $ref: '#/components/schemas/GenderEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        phone_number:
+          type: string
+          nullable: true
+          description: 'Format: +998901234567 or 901234567'
+          pattern: ^(?:\+998)?[0-9]{9}$
+          maxLength: 20
+        address_line_1:
+          type: string
+          maxLength: 255
+        address_line_2:
+          type: string
+          maxLength: 255
+        city:
+          type: string
+          maxLength: 100
+        country:
+          type: string
+          maxLength: 100
+        postal_code:
+          type: string
+          maxLength: 20
+        profession_category:
+          oneOf:
+          - $ref: '#/components/schemas/ProfessionCategoryEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        profession_title:
+          type: string
+          description: e.g., Software Engineer, Teacher, Student
+          maxLength: 100
+        workplace_organization:
+          type: string
+          title: Workplace/Organization
+          maxLength: 200
+      required:
+      - email
+    UserRegistration:
+      type: object
+      description: Enhanced registration serializer
+      properties:
+        username:
+          type: string
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        password:
+          type: string
+          writeOnly: true
+          minLength: 8
+        password_confirm:
+          type: string
+          writeOnly: true
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        phone_number:
+          type: string
+          nullable: true
+          description: 'Format: +998901234567 or 901234567'
+          pattern: ^(?:\+998)?[0-9]{9}$
+          maxLength: 20
+      required:
+      - email
+      - password
+      - password_confirm
+      - username
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
