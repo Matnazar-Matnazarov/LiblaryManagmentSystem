@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Management System - Public Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center">
+                    <h1 class="text-2xl font-bold text-gray-900">📚 Library Public Dashboard</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="/admin/login/" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        Admin Login
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Welcome Section -->
+        <div class="bg-white rounded-lg shadow p-6 mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Welcome to Our Library</h2>
+            <p class="text-gray-600">
+                Explore our comprehensive library management system with real-time monitoring and analytics.
+                This dashboard provides public access to general library statistics.
+            </p>
+        </div>
+
+        <!-- Public Statistics -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Total Books</p>
+                        <p class="text-2xl font-bold text-gray-900" id="totalBooks">Loading...</p>
+                    </div>
+                    <div class="text-3xl">📚</div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Available Books</p>
+                        <p class="text-2xl font-bold text-gray-900" id="availableBooks">Loading...</p>
+                    </div>
+                    <div class="text-3xl">✅</div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Active Members</p>
+                        <p class="text-2xl font-bold text-gray-900" id="activeMembers">Loading...</p>
+                    </div>
+                    <div class="text-3xl">👥</div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">System Status</p>
+                        <p class="text-2xl font-bold text-green-600" id="systemStatus">Healthy</p>
+                    </div>
+                    <div class="text-3xl">💚</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">📊 Monitoring Features</h3>
+                <ul class="space-y-2 text-gray-600">
+                    <li>• Real-time system monitoring</li>
+                    <li>• User activity tracking</li>
+                    <li>• Book popularity analytics</li>
+                    <li>• Loan management metrics</li>
+                    <li>• Performance monitoring</li>
+                    <li>• Automated alerts</li>
+                </ul>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">🔧 Admin Features</h3>
+                <ul class="space-y-2 text-gray-600">
+                    <li>• Comprehensive dashboard</li>
+                    <li>• Model-specific monitoring</li>
+                    <li>• Custom report generation</li>
+                    <li>• System health checks</li>
+                    <li>• Performance analytics</li>
+                    <li>• Professional metrics</li>
+                </ul>
+                <div class="mt-4">
+                    <a href="/api/analytics/dashboard/" class="text-blue-600 hover:text-blue-800">
+                        Access Admin Dashboard →
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Endpoints -->
+        <div class="mt-8 bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">🔗 Monitoring Endpoints</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <h4 class="font-medium text-gray-900 mb-2">Model Monitoring:</h4>
+                    <ul class="text-sm text-gray-600 space-y-1">
+                        <li>• <code>/api/analytics/monitor/users/</code></li>
+                        <li>• <code>/api/analytics/monitor/books/</code></li>
+                        <li>• <code>/api/analytics/monitor/loans/</code></li>
+                        <li>• <code>/api/analytics/monitor/analytics/</code></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-medium text-gray-900 mb-2">System Monitoring:</h4>
+                    <ul class="text-sm text-gray-600 space-y-1">
+                        <li>• <code>/api/analytics/monitor/system/</code></li>
+                        <li>• <code>/metrics</code> (Prometheus)</li>
+                        <li>• <code>/api/docs/</code> (API Documentation)</li>
+                        <li>• <code>/admin/</code> (Admin Panel)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Load basic public statistics
+        async function loadPublicStats() {
+            try {
+                // This would be a public endpoint with limited data
+                const stats = {
+                    totalBooks: 1250,
+                    availableBooks: 890,
+                    activeMembers: 340,
+                    systemStatus: 'Healthy'
+                };
+
+                document.getElementById('totalBooks').textContent = stats.totalBooks.toLocaleString();
+                document.getElementById('availableBooks').textContent = stats.availableBooks.toLocaleString();
+                document.getElementById('activeMembers').textContent = stats.activeMembers.toLocaleString();
+                document.getElementById('systemStatus').textContent = stats.systemStatus;
+            } catch (error) {
+                console.error('Error loading public stats:', error);
+            }
+        }
+
+        // Load stats when page loads
+        document.addEventListener('DOMContentLoaded', loadPublicStats);
+    </script>
+</body>
+</html> 

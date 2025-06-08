@@ -47,8 +47,8 @@ urlpatterns = [
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
         
-    # Prometheus metrics (if enabled)
-    path('metrics/', include('django_prometheus.urls')),
+    # Prometheus metrics
+    path('', include('django_prometheus.urls')),
     
     # Root redirect to API docs
     path('', RedirectView.as_view(url='/api/docs/', permanent=False)),

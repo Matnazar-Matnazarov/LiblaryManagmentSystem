@@ -14,13 +14,10 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django_filters.rest_framework import DjangoFilterBackend
-from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.utils import extend_schema, OpenApiParameter, extend_schema_view
 from drf_spectacular.types import OpenApiTypes
-from django.db.models import Q, Count, Avg
-from django.shortcuts import get_object_or_404
+from django.db.models import Q
 from django.utils import timezone
-from datetime import timedelta
-from typing import Dict, Any
 
 from ..models import User, UserRole, AccountStatus, VerificationStatus
 from ..serializers import (
@@ -30,11 +27,60 @@ from ..serializers import (
     UserDocumentVerificationSerializer, UserLoginSerializer
 )
 from ..permissions import (
-    IsOwnerOrReadOnly, IsAdminOrLibrarianOnly, RoleBasedPermission,
-    IsAccountActive, IsEmailVerified
+    IsOwnerOrReadOnly, IsAdminOrLibrarianOnly,
+    IsAccountActive
 )
 
 
+@extend_schema_view(
+    list=extend_schema(
+        summary="List Users",
+        description="Retrieve paginated list of users with advanced filtering and search capabilities.",
+        tags=['Users'],
+        parameters=[
+            OpenApiParameter('role', OpenApiTypes.STR, description='Filter by user role'),
+            OpenApiParameter('account_status', OpenApiTypes.STR, description='Filter by account status'),
+            OpenApiParameter('is_verified', OpenApiTypes.BOOL, description='Filter by verification status'),
+            OpenApiParameter('date_joined_from', OpenApiTypes.DATE, description='Filter from join date'),
+            OpenApiParameter('date_joined_to', OpenApiTypes.DATE, description='Filter to join date'),
+            OpenApiParameter('search', OpenApiTypes.STR, description='Search across name, email, username'),
+        ],
+        responses={200: UserSerializer(many=True)}
+    ),
+    create=extend_schema(
+        summary="Create User",
+        description="Create a new user account (admin only).",
+        tags=['Users'],
+        request=UserCreateSerializer,
+        responses={201: UserSerializer}
+    ),
+    retrieve=extend_schema(
+        summary="Get User Details",
+        description="Retrieve detailed information about a specific user.",
+        tags=['Users'],
+        responses={200: UserSerializer}
+    ),
+    update=extend_schema(
+        summary="Update User",
+        description="Update user information (owner or admin only).",
+        tags=['Users'],
+        request=UserSerializer,
+        responses={200: UserSerializer}
+    ),
+    partial_update=extend_schema(
+        summary="Partially Update User",
+        description="Partially update user information (owner or admin only).",
+        tags=['Users'],
+        request=UserSerializer,
+        responses={200: UserSerializer}
+    ),
+    destroy=extend_schema(
+        summary="Delete User",
+        description="Delete a user account (admin only).",
+        tags=['Users'],
+        responses={204: None}
+    ),
+)
 class UserViewSet(viewsets.ModelViewSet):
     """
     Professional User Management ViewSet with comprehensive functionality
@@ -104,8 +150,6 @@ class UserViewSet(viewsets.ModelViewSet):
         """Return appropriate serializer based on action"""
         if self.action == 'create':
             return UserCreateSerializer
-        elif self.action == 'register':
-            return UserRegistrationSerializer
         elif self.action in ['profile', 'update_profile']:
             return UserProfileSerializer
         elif self.action == 'upload_documents':
@@ -118,8 +162,6 @@ class UserViewSet(viewsets.ModelViewSet):
             return UserStatusChangeSerializer
         elif self.action == 'verify_documents':
             return UserDocumentVerificationSerializer
-        elif self.action == 'login':
-            return UserLoginSerializer
         return UserSerializer
     
     def get_permissions(self):
@@ -128,8 +170,6 @@ class UserViewSet(viewsets.ModelViewSet):
             permission_classes = [permissions.IsAuthenticated, IsAdminOrLibrarianOnly]
         elif self.action in ['update', 'partial_update']:
             permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly]
-        elif self.action == 'register':
-            permission_classes = [permissions.AllowAny]
         else:
             permission_classes = [permissions.IsAuthenticated]
         

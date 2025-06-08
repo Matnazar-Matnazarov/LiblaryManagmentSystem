@@ -36,7 +36,7 @@ if not SECRET_KEY:
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool('DEBUG', default=False)
 
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1', 'testserver'])
 
 # Custom User Model
 AUTH_USER_MODEL = 'accounts.User'
@@ -75,12 +75,17 @@ THIRD_PARTY_APPS = [
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
-    
+    'allauth.socialaccount.providers.google',  # Google oauth
     # Filtering
     'django_filters',
     
+    # Admin Enhancements
+    'import_export',
+    'rangefilter',
+    
     # Monitoring
     'django_prometheus',
+    
 ]
 
 LOCAL_APPS = [
@@ -103,6 +108,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'allauth.account.middleware.AccountMiddleware',
+    'analytics.monitoring.LibraryMonitoringMiddleware',  # Custom monitoring
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.locale.LocaleMiddleware',
@@ -659,20 +665,41 @@ SOCIALACCOUNT_QUERY_EMAIL = True
 
 # Social account providers
 SOCIALACCOUNT_PROVIDERS = {
-    'google': {
-        'SCOPE': [
-            'profile',
-            'email',
-        ],
-        'AUTH_PARAMS': {
-            'access_type': 'online',
+    "google": {
+        "APP": {
+            "client_id": "322786648793-lahah2h86g0pgfe45ips0rua3tp1ngtv.apps.googleusercontent.com",
+            "secret": "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",
         },
-        'OAUTH_PKCE_ENABLED': True,
-        'FETCH_USERINFO': True,
-    }
+        "SCOPE": [
+            "profile",
+            "email",
+        ],
+        "AUTH_PARAMS": {
+            "access_type": "offline",
+            "prompt": "consent",
+        },
+        "METHOD": "oauth2",
+        "VERIFIED_EMAIL": True,
+        "OAUTH_PKCE_ENABLED": True,  # Enable PKCE
+    },
+    "github": {
+        "SCOPE": [
+            "user",
+            "emails",
+        ],
+        "AUTH_PARAMS": {
+            "allow_signup": "true",
+            "prompt": "consent",
+        },
+        "OAUTH_PKCE_ENABLED": True,
+        "METHOD": "oauth2",
+        "VERIFIED_EMAIL": True,
+    },
 }
+
 
 # Custom adapter for JWT integration
 SOCIALACCOUNT_ADAPTER = 'accounts.adapters.CustomSocialAccountAdapter'
 ACCOUNT_ADAPTER = 'accounts.adapters.CustomAccountAdapter'
 
+FRONTEND_URL = env.str('FRONTEND_URL', default='http://localhost:3000')

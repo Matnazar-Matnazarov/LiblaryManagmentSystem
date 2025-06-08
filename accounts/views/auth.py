@@ -14,7 +14,7 @@ from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
@@ -31,7 +31,9 @@ from typing import Dict, Any
 from ..models import User, AccountStatus, VerificationStatus
 from ..serializers import (
     UserLoginSerializer, UserRegistrationSerializer, 
-    PasswordChangeSerializer, UserSerializer
+    PasswordChangeSerializer, UserSerializer,
+    LogoutSerializer, PasswordResetRequestSerializer,
+    PasswordResetConfirmSerializer, ResendVerificationSerializer
 )
 
 
@@ -210,25 +212,20 @@ class PasswordResetRequestView(APIView):
         tags=['Authentication'],
         summary="Request Password Reset",
         description="Send password reset email to user.",
-        request={
-            'type': 'object',
-            'properties': {
-                'email': {'type': 'string', 'format': 'email'}
-            },
-            'required': ['email']
-        },
+        request=PasswordResetRequestSerializer,
         responses={
             200: {'type': 'object', 'properties': {'message': {'type': 'string'}}},
+            400: {'type': 'object', 'properties': {'error': {'type': 'string'}}},
         }
     )
     def post(self, request):
         """Send password reset email"""
-        email = request.data.get('email')
+        serializer = PasswordResetRequestSerializer(data=request.data)
         
-        if not email:
-            return Response({
-                'error': 'Email is required'
-            }, status=status.HTTP_400_BAD_REQUEST)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        email = serializer.validated_data['email']
         
         try:
             user = User.objects.get(email=email)
@@ -281,13 +278,7 @@ class PasswordResetConfirmView(APIView):
             OpenApiParameter('uidb64', OpenApiTypes.STR, OpenApiParameter.PATH),
             OpenApiParameter('token', OpenApiTypes.STR, OpenApiParameter.PATH),
         ],
-        request={
-            'type': 'object',
-            'properties': {
-                'new_password': {'type': 'string', 'minLength': 8}
-            },
-            'required': ['new_password']
-        },
+        request=PasswordResetConfirmSerializer,
         responses={
             200: {'type': 'object', 'properties': {'message': {'type': 'string'}}},
             400: {'type': 'object', 'properties': {'error': {'type': 'string'}}},
@@ -295,12 +286,12 @@ class PasswordResetConfirmView(APIView):
     )
     def post(self, request, uidb64, token):
         """Reset password with token"""
-        new_password = request.data.get('new_password')
+        serializer = PasswordResetConfirmSerializer(data=request.data)
         
-        if not new_password:
-            return Response({
-                'error': 'New password is required'
-            }, status=status.HTTP_400_BAD_REQUEST)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        new_password = serializer.validated_data['new_password']
         
         try:
             uid = force_str(urlsafe_base64_decode(uidb64))
@@ -359,25 +350,25 @@ class PasswordChangeView(APIView):
     tags=['Authentication'],
     summary="User Logout",
     description="Logout user and invalidate refresh token.",
-    request={
-        'type': 'object',
-        'properties': {
-            'refresh': {'type': 'string'}
-        }
-    },
+    request=LogoutSerializer,
     responses={
         200: {'type': 'object', 'properties': {'message': {'type': 'string'}}},
+        400: {'type': 'object', 'properties': {'error': {'type': 'string'}}},
     }
 )
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
 def logout_view(request):
     """Logout user and blacklist refresh token"""
+    serializer = LogoutSerializer(data=request.data)
+    
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
     try:
-        refresh_token = request.data.get('refresh')
-        if refresh_token:
-            token = RefreshToken(refresh_token)
-            token.blacklist()
+        refresh_token = serializer.validated_data['refresh']
+        token = RefreshToken(refresh_token)
+        token.blacklist()
         
         # Django logout
         logout(request)
@@ -395,7 +386,8 @@ def logout_view(request):
 @extend_schema(
     tags=['Authentication'],
     summary="Resend Verification Email",
-    description="Resend email verification link to user.",
+    description="Resend email verification link to authenticated user.",
+    request=ResendVerificationSerializer,
     responses={
         200: {'type': 'object', 'properties': {'message': {'type': 'string'}}},
     }
@@ -404,6 +396,11 @@ def logout_view(request):
 @permission_classes([permissions.IsAuthenticated])
 def resend_verification_email(request):
     """Resend email verification"""
+    serializer = ResendVerificationSerializer(data=request.data)
+    
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
     user = request.user
     
     if user.email_verification_status == VerificationStatus.APPROVED:
@@ -417,4 +414,45 @@ def resend_verification_email(request):
     
     return Response({
         'message': 'Verification email sent!'
-    }, status=status.HTTP_200_OK) 
+    }, status=status.HTTP_200_OK)
+
+
+# Custom JWT Token Views with proper tags
+class CustomTokenRefreshView(TokenRefreshView):
+    """Custom JWT token refresh view"""
+    
+    @extend_schema(
+        tags=['JWT Tokens'],
+        summary="Refresh JWT Token",
+        description="Refresh JWT access token using refresh token.",
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'access': {'type': 'string'}
+                }
+            }
+        }
+    )
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
+
+
+class CustomTokenVerifyView(TokenVerifyView):
+    """Custom JWT token verify view"""
+    
+    @extend_schema(
+        tags=['JWT Tokens'],
+        summary="Verify JWT Token",
+        description="Verify if JWT token is valid.",
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'string'}
+                }
+            }
+        }
+    )
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs) 

@@ -104,6 +104,7 @@ class UserSessionInline(admin.TabularInline):
 class UserVerificationLogInline(admin.TabularInline):
     """Inline for user verification logs"""
     model = UserVerificationLog
+    fk_name = 'user'  # Specify which ForeignKey to use
     extra = 0
     readonly_fields = ['verification_type', 'old_status', 'new_status', 'verified_by', 'created_at']
     fields = ['verification_type', 'old_status', 'new_status', 'verified_by', 'notes', 'created_at']
@@ -200,9 +201,9 @@ class UserAdmin(BaseUserAdmin):
         ('Contact Information', {
             'fields': [
                 'phone_number',
-                ('street_address', 'city'),
-                ('district', 'region'),
-                'postal_code',
+                ('address_line_1', 'address_line_2'),
+                ('city', 'state_province'),
+                ('postal_code', 'country'),
             ],
             'classes': ['wide'],
         }),
@@ -235,9 +236,10 @@ class UserAdmin(BaseUserAdmin):
         }),
         ('Documents', {
             'fields': [
+                ('identity_document_type', 'identity_document_number'),
                 'identity_document_front',
                 'identity_document_back',
-                'professional_document',
+                'selfie_photo',
             ],
             'classes': ['wide', 'collapse'],
         }),
@@ -332,7 +334,7 @@ class UserAdmin(BaseUserAdmin):
             AccountStatus.ACTIVE: '#198754',           # Green
             AccountStatus.SUSPENDED: '#dc3545',       # Red
             AccountStatus.PENDING_ACTIVATION: '#fd7e14',  # Orange
-            AccountStatus.DEACTIVATED: '#6c757d',     # Gray
+            AccountStatus.INACTIVE: '#6c757d',        # Gray
         }
         color = colors.get(obj.account_status, '#6c757d')
         return format_html(
@@ -412,7 +414,7 @@ class UserAdmin(BaseUserAdmin):
     
     def deactivate_users(self, request, queryset):
         """Bulk deactivate users"""
-        updated = queryset.update(account_status=AccountStatus.DEACTIVATED)
+        updated = queryset.update(account_status=AccountStatus.INACTIVE)
         self.message_user(request, f"{updated} users were successfully deactivated.")
     deactivate_users.short_description = "Deactivate selected users"
     

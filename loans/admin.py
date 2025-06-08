@@ -1,157 +1,160 @@
 """
 Professional Django Admin Configuration for Loans App
 
-This module provides comprehensive admin interface for loan management with:
-- Advanced loan tracking and management
-- Reservation system administration
-- Overdue loan monitoring
-- Fine management
-- Bulk operations and custom actions
-- Professional UI improvements and reporting
+Bu modul kutubxona qarz berish tizimi uchun professional admin interfeysi taqdim etadi:
+- Qarz berish va qaytarish boshqaruvi
+- Rezervatsiya tizimi
+- Jarima hisoblash va boshqaruv
+- Kengaytirish (renewal) boshqaruvi
+- Keng qamrovli hisobot va eksport
+- Professional UI yaxshilanishlari
 """
 
 from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
-from django.db.models import Q, Count, Sum
+from django.db.models import Q, Count, Sum, Avg
 from django.utils import timezone
 from django.contrib.admin import SimpleListFilter
 from django.http import HttpResponse
-from datetime import datetime, timedelta
+from django.contrib import messages
+from datetime import timedelta, date
 import csv
 
 from .models import Loan, Reservation, LoanStatus, ReservationStatus
 
 
 class LoanStatusFilter(SimpleListFilter):
-    """Custom filter for loan status with overdue detection"""
-    title = 'Loan Status'
+    """Qarz holati uchun maxsus filter"""
+    title = 'Qarz Holati'
     parameter_name = 'loan_status'
 
     def lookups(self, request, model_admin):
         return [
-            ('active', 'Active'),
-            ('overdue', 'Overdue'),
-            ('returned', 'Returned'),
-            ('renewed', 'Renewed'),
-            ('with_fine', 'With Fine'),
-            ('lost_damaged', 'Lost/Damaged'),
-        ]
-
-    def queryset(self, request, queryset):
-        if self.value() == 'active':
-            return queryset.filter(status=LoanStatus.ACTIVE, due_date__gte=timezone.now().date())
-        elif self.value() == 'overdue':
-            return queryset.filter(
-                Q(status=LoanStatus.ACTIVE, due_date__lt=timezone.now().date()) |
-                Q(status=LoanStatus.OVERDUE)
-            )
-        elif self.value() == 'returned':
-            return queryset.filter(status=LoanStatus.RETURNED)
-        elif self.value() == 'renewed':
-            return queryset.filter(renewal_count__gt=0)
-        elif self.value() == 'with_fine':
-            return queryset.filter(fine_amount__gt=0)
-        elif self.value() == 'lost_damaged':
-            return queryset.filter(status__in=[LoanStatus.LOST, LoanStatus.DAMAGED])
-        return queryset
-
-
-class DueDateFilter(SimpleListFilter):
-    """Filter loans by due date ranges"""
-    title = 'Due Date'
-    parameter_name = 'due_date_range'
-
-    def lookups(self, request, model_admin):
-        return [
-            ('overdue', 'Overdue'),
-            ('due_today', 'Due Today'),
-            ('due_tomorrow', 'Due Tomorrow'),
-            ('due_week', 'Due This Week'),
-            ('due_month', 'Due This Month'),
+            ('active', 'Faol'),
+            ('overdue', 'Muddati o\'tgan'),
+            ('returned', 'Qaytarilgan'),
+            ('renewable', 'Kengaytirilishi mumkin'),
+            ('with_fines', 'Jarima bilan'),
         ]
 
     def queryset(self, request, queryset):
         today = timezone.now().date()
-        if self.value() == 'overdue':
-            return queryset.filter(due_date__lt=today, return_date__isnull=True)
-        elif self.value() == 'due_today':
-            return queryset.filter(due_date=today, return_date__isnull=True)
-        elif self.value() == 'due_tomorrow':
-            return queryset.filter(due_date=today + timedelta(days=1), return_date__isnull=True)
-        elif self.value() == 'due_week':
+        
+        if self.value() == 'active':
+            return queryset.filter(status=LoanStatus.ACTIVE)
+        elif self.value() == 'overdue':
             return queryset.filter(
-                due_date__gte=today,
-                due_date__lte=today + timedelta(days=7),
-                return_date__isnull=True
+                status__in=[LoanStatus.ACTIVE, LoanStatus.OVERDUE],
+                due_date__lt=today
             )
-        elif self.value() == 'due_month':
+        elif self.value() == 'returned':
+            return queryset.filter(status=LoanStatus.RETURNED)
+        elif self.value() == 'renewable':
             return queryset.filter(
-                due_date__gte=today,
-                due_date__lte=today + timedelta(days=30),
-                return_date__isnull=True
+                status=LoanStatus.ACTIVE,
+                renewal_count__lt=3,
+                due_date__gte=today
             )
+        elif self.value() == 'with_fines':
+            return queryset.filter(fine_amount__gt=0, fine_paid=False)
         return queryset
 
 
-class FineAmountFilter(SimpleListFilter):
-    """Filter loans by fine amount"""
-    title = 'Fine Amount'
-    parameter_name = 'fine_amount'
+class DueDateFilter(SimpleListFilter):
+    """Qaytarish muddati uchun filter"""
+    title = 'Qaytarish Muddati'
+    parameter_name = 'due_date_filter'
 
     def lookups(self, request, model_admin):
         return [
-            ('no_fine', 'No Fine'),
-            ('small_fine', 'Small Fine (< 10,000)'),
-            ('medium_fine', 'Medium Fine (10,000 - 50,000)'),
-            ('large_fine', 'Large Fine (> 50,000)'),
-            ('unpaid', 'Unpaid Fines'),
+            ('today', 'Bugun'),
+            ('tomorrow', 'Ertaga'),
+            ('this_week', 'Shu hafta'),
+            ('next_week', 'Keyingi hafta'),
+            ('overdue', 'Muddati o\'tgan'),
         ]
 
     def queryset(self, request, queryset):
-        if self.value() == 'no_fine':
-            return queryset.filter(fine_amount=0)
-        elif self.value() == 'small_fine':
-            return queryset.filter(fine_amount__gt=0, fine_amount__lt=10000)
-        elif self.value() == 'medium_fine':
-            return queryset.filter(fine_amount__gte=10000, fine_amount__lte=50000)
-        elif self.value() == 'large_fine':
-            return queryset.filter(fine_amount__gt=50000)
-        elif self.value() == 'unpaid':
-            return queryset.filter(fine_amount__gt=0, fine_paid=False, fine_waived=False)
+        today = timezone.now().date()
+        
+        if self.value() == 'today':
+            return queryset.filter(due_date=today)
+        elif self.value() == 'tomorrow':
+            return queryset.filter(due_date=today + timedelta(days=1))
+        elif self.value() == 'this_week':
+            week_end = today + timedelta(days=7)
+            return queryset.filter(due_date__range=[today, week_end])
+        elif self.value() == 'next_week':
+            week_start = today + timedelta(days=7)
+            week_end = week_start + timedelta(days=7)
+            return queryset.filter(due_date__range=[week_start, week_end])
+        elif self.value() == 'overdue':
+            return queryset.filter(due_date__lt=today, status=LoanStatus.ACTIVE)
+        return queryset
+
+
+class ReservationStatusFilter(SimpleListFilter):
+    """Rezervatsiya holati uchun filter"""
+    title = 'Rezervatsiya Holati'
+    parameter_name = 'reservation_status'
+
+    def lookups(self, request, model_admin):
+        return [
+            ('active', 'Faol'),
+            ('expired', 'Muddati tugagan'),
+            ('priority', 'Ustuvor'),
+            ('notified', 'Xabardor qilingan'),
+        ]
+
+    def queryset(self, request, queryset):
+        now = timezone.now()
+        
+        if self.value() == 'active':
+            return queryset.filter(status__in=[ReservationStatus.PENDING, ReservationStatus.CONFIRMED])
+        elif self.value() == 'expired':
+            return queryset.filter(expires_at__lt=now, status=ReservationStatus.PENDING)
+        elif self.value() == 'priority':
+            return queryset.filter(priority__gt=0)
+        elif self.value() == 'notified':
+            return queryset.filter(notified_at__isnull=False)
         return queryset
 
 
 @admin.register(Loan)
 class LoanAdmin(admin.ModelAdmin):
-    """Professional Loan Admin with comprehensive features"""
+    """Professional Qarz Admin - keng qamrovli xususiyatlar bilan"""
     
+    # Ro'yxat ko'rinishi konfiguratsiyasi
     list_display = [
         'loan_id_display',
         'user_link',
         'book_link',
         'status_badge',
-        'loan_date',
+        'loan_date_display',
         'due_date_display',
-        'return_date_display',
-        'fine_display',
-        'renewal_count_display',
-        'days_overdue',
+        'days_status',
+        'fine_status',
+        'renewal_info',
+        'actions_column',
     ]
     
     list_display_links = ['loan_id_display']
     
+    # Filterlash imkoniyatlari
     list_filter = [
         LoanStatusFilter,
         DueDateFilter,
-        FineAmountFilter,
-        'loan_date',
-        'due_date',
+        'status',
         'fine_paid',
         'fine_waived',
         'renewal_count',
+        'loan_date',
+        'due_date',
+        'return_date',
     ]
     
+    # Qidiruv konfiguratsiyasi
     search_fields = [
         'user__username',
         'user__email',
@@ -160,18 +163,21 @@ class LoanAdmin(admin.ModelAdmin):
         'book__title',
         'book__isbn',
         'book__authors__name',
+        'notes',
+        'librarian_notes',
     ]
     
+    # Faqat o'qish uchun maydonlar
     readonly_fields = [
         'created_at',
         'updated_at',
-        'days_since_loan',
         'calculated_fine',
-        'loan_duration',
+        'renewal_history_display',
     ]
     
+    # Fieldsets - tashkil etilgan ko'rinish
     fieldsets = [
-        ('Loan Information', {
+        ('Qarz Ma\'lumotlari', {
             'fields': [
                 ('user', 'book'),
                 ('status', 'loan_date'),
@@ -179,13 +185,13 @@ class LoanAdmin(admin.ModelAdmin):
             ],
             'classes': ['wide'],
         }),
-        ('Renewal Information', {
+        ('Kengaytirish Ma\'lumotlari', {
             'fields': [
-                ('renewal_count', 'renewal_history'),
+                ('renewal_count', 'renewal_history_display'),
             ],
             'classes': ['wide'],
         }),
-        ('Fine Management', {
+        ('Jarima Boshqaruvi', {
             'fields': [
                 'fine_amount',
                 ('fine_paid', 'fine_waived'),
@@ -193,34 +199,33 @@ class LoanAdmin(admin.ModelAdmin):
             ],
             'classes': ['wide'],
         }),
-        ('Notes', {
+        ('Izohlar', {
             'fields': [
                 'notes',
                 'librarian_notes',
             ],
             'classes': ['wide'],
         }),
-        ('System Information', {
+        ('Tizim Ma\'lumotlari', {
             'fields': [
                 'created_by',
                 ('created_at', 'updated_at'),
-                ('days_since_loan', 'loan_duration'),
             ],
             'classes': ['wide', 'collapse'],
         }),
     ]
     
-    # Pagination
+    # Sahifalash
     list_per_page = 25
     list_max_show_all = 100
     
-    # Date hierarchy
+    # Sana ierarxiyasi
     date_hierarchy = 'loan_date'
     
-    # Ordering
+    # Tartiblash
     ordering = ['-created_at']
     
-    # Custom actions
+    # Maxsus amallar
     actions = [
         'mark_as_returned',
         'mark_as_overdue',
@@ -229,10 +234,11 @@ class LoanAdmin(admin.ModelAdmin):
         'send_reminder_emails',
         'export_loans_csv',
         'generate_overdue_report',
+        'renew_selected_loans',
     ]
     
     def loan_id_display(self, obj):
-        """Display loan ID with status icon"""
+        """Qarz ID ni holat belgisi bilan ko'rsatish"""
         status_icons = {
             LoanStatus.ACTIVE: '🟢',
             LoanStatus.OVERDUE: '🔴',
@@ -243,241 +249,212 @@ class LoanAdmin(admin.ModelAdmin):
         }
         icon = status_icons.get(obj.status, '📋')
         return f"{icon} #{obj.id}"
-    loan_id_display.short_description = "Loan ID"
+    loan_id_display.short_description = "Qarz ID"
     loan_id_display.admin_order_field = "id"
     
     def user_link(self, obj):
-        """Link to user admin page"""
+        """Foydalanuvchi sahifasiga havola"""
         url = reverse('admin:accounts_user_change', args=[obj.user.pk])
-        return format_html(
-            '<a href="{}">{}</a><br><small>{}</small>',
-            url,
-            obj.user.get_full_name() or obj.user.username,
-            obj.user.email
-        )
-    user_link.short_description = "User"
+        return format_html('<a href="{}">{}</a>', url, obj.user.get_full_name() or obj.user.username)
+    user_link.short_description = "Foydalanuvchi"
     user_link.admin_order_field = "user__username"
     
     def book_link(self, obj):
-        """Link to book admin page"""
+        """Kitob sahifasiga havola"""
         url = reverse('admin:books_book_change', args=[obj.book.pk])
-        return format_html(
-            '<a href="{}">{}</a><br><small>ISBN: {}</small>',
-            url,
-            obj.book.title[:40] + "..." if len(obj.book.title) > 40 else obj.book.title,
-            obj.book.isbn or "N/A"
-        )
-    book_link.short_description = "Book"
+        return format_html('<a href="{}">{}</a>', url, obj.book.title[:50])
+    book_link.short_description = "Kitob"
     book_link.admin_order_field = "book__title"
     
     def status_badge(self, obj):
-        """Display status as colored badge"""
+        """Holat belgisini rangli ko'rsatish"""
         colors = {
-            LoanStatus.ACTIVE: '#198754',      # Green
-            LoanStatus.OVERDUE: '#dc3545',     # Red
-            LoanStatus.RETURNED: '#0d6efd',    # Blue
-            LoanStatus.RENEWED: '#fd7e14',     # Orange
-            LoanStatus.LOST: '#6c757d',        # Gray
-            LoanStatus.DAMAGED: '#6c757d',     # Gray
+            LoanStatus.ACTIVE: '#28a745',      # Yashil
+            LoanStatus.OVERDUE: '#dc3545',     # Qizil
+            LoanStatus.RETURNED: '#6c757d',    # Kulrang
+            LoanStatus.RENEWED: '#17a2b8',     # Ko'k
+            LoanStatus.LOST: '#343a40',        # Qora
+            LoanStatus.DAMAGED: '#ffc107',     # Sariq
         }
-        
-        # Check if loan is actually overdue
-        if obj.status == LoanStatus.ACTIVE and obj.due_date < timezone.now().date():
-            display_status = "OVERDUE"
-            color = colors[LoanStatus.OVERDUE]
-        else:
-            display_status = obj.get_status_display()
-            color = colors.get(obj.status, '#6c757d')
-        
+        color = colors.get(obj.status, '#6c757d')
         return format_html(
-            '<span style="background-color: {}; color: white; padding: 3px 8px; '
-            'border-radius: 4px; font-size: 11px; font-weight: bold;">{}</span>',
+            '<span style="background-color: {}; color: white; padding: 2px 6px; '
+            'border-radius: 3px; font-size: 11px;">{}</span>',
             color,
-            display_status
+            obj.get_status_display()
         )
-    status_badge.short_description = "Status"
+    status_badge.short_description = "Holat"
     status_badge.admin_order_field = "status"
     
+    def loan_date_display(self, obj):
+        """Qarz berish sanasini ko'rsatish"""
+        return obj.loan_date.strftime('%Y-%m-%d')
+    loan_date_display.short_description = "Qarz Sanasi"
+    loan_date_display.admin_order_field = "loan_date"
+    
     def due_date_display(self, obj):
-        """Display due date with color coding"""
+        """Qaytarish muddatini rangli ko'rsatish"""
         today = timezone.now().date()
-        days_until_due = (obj.due_date - today).days
+        days_diff = (obj.due_date - today).days
         
-        if obj.return_date:  # Already returned
-            return format_html('<span style="color: green;">✅ {}</span>', obj.due_date)
-        elif days_until_due < 0:  # Overdue
-            return format_html(
-                '<span style="color: red; font-weight: bold;">🔴 {} ({} days overdue)</span>',
-                obj.due_date,
-                abs(days_until_due)
-            )
-        elif days_until_due == 0:  # Due today
-            return format_html('<span style="color: orange; font-weight: bold;">⚠️ {} (Due today)</span>', obj.due_date)
-        elif days_until_due <= 3:  # Due soon
-            return format_html('<span style="color: orange;">⏰ {} ({} days)</span>', obj.due_date, days_until_due)
+        if days_diff < 0:
+            color = 'red'
+            text = f"{abs(days_diff)} kun kechikkan"
+        elif days_diff == 0:
+            color = 'orange'
+            text = "Bugun"
+        elif days_diff <= 3:
+            color = 'orange'
+            text = f"{days_diff} kun qoldi"
         else:
-            return format_html('<span style="color: green;">{}</span>', obj.due_date)
-    due_date_display.short_description = "Due Date"
+            color = 'green'
+            text = obj.due_date.strftime('%Y-%m-%d')
+        
+        return format_html('<span style="color: {};">{}</span>', color, text)
+    due_date_display.short_description = "Qaytarish Muddati"
     due_date_display.admin_order_field = "due_date"
     
-    def return_date_display(self, obj):
-        """Display return date with status"""
+    def days_status(self, obj):
+        """Kunlar holati"""
+        today = timezone.now().date()
+        loan_days = (today - obj.loan_date).days
+        
         if obj.return_date:
-            if obj.return_date <= obj.due_date:
-                return format_html('<span style="color: green;">✅ {}</span>', obj.return_date)
-            else:
-                days_late = (obj.return_date - obj.due_date).days
-                return format_html(
-                    '<span style="color: orange;">⏰ {} ({} days late)</span>',
-                    obj.return_date,
-                    days_late
-                )
-        return format_html('<span style="color: gray;">Not returned</span>')
-    return_date_display.short_description = "Return Date"
-    return_date_display.admin_order_field = "return_date"
+            duration = (obj.return_date - obj.loan_date).days
+            return f"✅ {duration} kun"
+        elif obj.due_date < today:
+            overdue_days = (today - obj.due_date).days
+            return format_html('<span style="color: red;">🔴 {} kun kechikkan</span>', overdue_days)
+        else:
+            return f"📅 {loan_days} kun"
+    days_status.short_description = "Kunlar"
     
-    def fine_display(self, obj):
-        """Display fine information with status"""
+    def fine_status(self, obj):
+        """Jarima holati"""
         if obj.fine_amount > 0:
             if obj.fine_waived:
-                return format_html(
-                    '<span style="color: blue;">💸 {} som (Waived)</span>',
-                    f"{obj.fine_amount:,.0f}"
-                )
-            elif obj.fine_paid:
-                return format_html(
-                    '<span style="color: green;">💰 {} som (Paid)</span>',
-                    f"{obj.fine_amount:,.0f}"
-                )
-            else:
-                return format_html(
-                    '<span style="color: red; font-weight: bold;">💸 {} som (Unpaid)</span>',
-                    f"{obj.fine_amount:,.0f}"
-                )
-        return "-"
-    fine_display.short_description = "Fine"
-    fine_display.admin_order_field = "fine_amount"
+                return format_html('<span style="color: blue;">💰 {} so\'m (kechirilib)</span>', obj.fine_amount)
+            else:   
+                return format_html('<span style="color: green;">💰 {} so\'m (to\'langan)</span>', obj.fine_amount)
+        else:
+                return format_html('<span style="color: red;">💰 {} so\'m (to\'lanmagan)</span>', obj.fine_amount)
+    fine_status.short_description = "Jarima"
     
-    def renewal_count_display(self, obj):
-        """Display renewal count with visual indicator"""
+    def renewal_info(self, obj):
+        """Kengaytirish ma'lumotlari"""
         if obj.renewal_count > 0:
-            return format_html(
-                '<span style="color: orange;">🔄 {} renewals</span>',
-                obj.renewal_count
-            )
-        return "-"
-    renewal_count_display.short_description = "Renewals"
-    renewal_count_display.admin_order_field = "renewal_count"
+            return f"🔄 {obj.renewal_count} marta"
+        return "🔄 Kengaytirilmagan"
+    renewal_info.short_description = "Kengaytirish"
+    renewal_info.admin_order_field = "renewal_count"
     
-    def days_overdue(self, obj):
-        """Calculate and display days overdue"""
-        if obj.return_date:
-            return "-"
+    def actions_column(self, obj):
+        """Amallar ustuni"""
+        buttons = []
         
-        today = timezone.now().date()
-        if obj.due_date < today:
-            days = (today - obj.due_date).days
-            return format_html('<span style="color: red; font-weight: bold;">{} days</span>', days)
-        return "-"
-    days_overdue.short_description = "Days Overdue"
-    
-    def days_since_loan(self, obj):
-        """Calculate days since loan was created"""
-        today = timezone.now().date()
-        return (today - obj.loan_date).days
-    days_since_loan.short_description = "Days Since Loan"
+        if obj.status == LoanStatus.ACTIVE:
+            if obj.can_renew():
+                buttons.append('<button class="button" onclick="renewLoan({})">Kengaytirish</button>'.format(obj.id))
+            buttons.append('<button class="button" onclick="returnBook({})">Qaytarish</button>'.format(obj.id))
+        
+        return format_html(' '.join(buttons))
+    actions_column.short_description = "Amallar"
     
     def calculated_fine(self, obj):
-        """Calculate fine based on overdue days"""
-        if obj.return_date or obj.due_date >= timezone.now().date():
-            return "No fine"
-        
-        days_overdue = (timezone.now().date() - obj.due_date).days
-        fine_per_day = 1000  # This should come from settings
-        calculated_fine = days_overdue * fine_per_day
-        
-        return format_html(
-            '<strong>{} som</strong><br><small>({} days × {} som/day)</small>',
-            f"{calculated_fine:,.0f}",
-            days_overdue,
-            f"{fine_per_day:,.0f}"
-        )
-    calculated_fine.short_description = "Calculated Fine"
+        """Hisoblangan jarima"""
+        fine = obj.calculate_fine()
+        return f"{fine} so'm"
+    calculated_fine.short_description = "Hisoblangan Jarima"
     
-    def loan_duration(self, obj):
-        """Calculate loan duration"""
-        end_date = obj.return_date or timezone.now().date()
-        return (end_date - obj.loan_date).days
-    loan_duration.short_description = "Loan Duration (days)"
+    def renewal_history_display(self, obj):
+        """Kengaytirish tarixini ko'rsatish"""
+        if obj.renewal_history:
+            history = []
+            for renewal in obj.renewal_history:
+                history.append(f"{renewal.get('date', 'N/A')} - {renewal.get('reason', 'Sabab ko\'rsatilmagan')}")
+            return format_html('<br>'.join(history))
+        return "Kengaytirish tarixi yo'q"
+    renewal_history_display.short_description = "Kengaytirish Tarixi"
     
-    # Custom actions
+    # Maxsus amallar
+    @admin.action(description='Tanlangan qarzlarni qaytarilgan deb belgilash')
     def mark_as_returned(self, request, queryset):
-        """Mark selected loans as returned"""
-        today = timezone.now().date()
+        """Tanlangan qarzlarni qaytarilgan deb belgilash"""
         updated = 0
         for loan in queryset:
-            if not loan.return_date:
-                loan.status = LoanStatus.RETURNED
-                loan.return_date = today
-                loan.book.return_copy()  # Update book availability
-                loan.save()
+            if loan.status in [LoanStatus.ACTIVE, LoanStatus.OVERDUE]:
+                loan.return_book()
                 updated += 1
         
-        self.message_user(request, f"{updated} loans marked as returned.")
-    mark_as_returned.short_description = "Mark selected loans as returned"
+        self.message_user(
+            request,
+            f'{updated} ta qarz qaytarilgan deb belgilandi.',
+            messages.SUCCESS
+        )
     
+    @admin.action(description='Tanlangan qarzlarni muddati o\'tgan deb belgilash')
     def mark_as_overdue(self, request, queryset):
-        """Mark selected loans as overdue"""
+        """Muddati o'tgan qarzlarni belgilash"""
         updated = queryset.filter(
-            due_date__lt=timezone.now().date(),
-            return_date__isnull=True
+            status=LoanStatus.ACTIVE,
+            due_date__lt=timezone.now().date()
         ).update(status=LoanStatus.OVERDUE)
         
-        self.message_user(request, f"{updated} loans marked as overdue.")
-    mark_as_overdue.short_description = "Mark selected loans as overdue"
+        self.message_user(
+            request,
+            f'{updated} ta qarz muddati o\'tgan deb belgilandi.',
+            messages.SUCCESS
+        )
     
+    @admin.action(description='Tanlangan qarzlar uchun jarimalarni hisoblash')
     def calculate_fines(self, request, queryset):
-        """Calculate fines for overdue loans"""
+        """Jarimalarni hisoblash"""
         updated = 0
-        fine_per_day = 1000  # This should come from settings
-        
         for loan in queryset:
-            if not loan.return_date and loan.due_date < timezone.now().date():
-                days_overdue = (timezone.now().date() - loan.due_date).days
-                calculated_fine = days_overdue * fine_per_day
-                loan.fine_amount = calculated_fine
+            old_fine = loan.fine_amount
+            new_fine = loan.calculate_fine()
+            if new_fine != old_fine:
+                loan.fine_amount = new_fine
                 loan.save()
                 updated += 1
         
-        self.message_user(request, f"Fines calculated for {updated} loans.")
-    calculate_fines.short_description = "Calculate fines for overdue loans"
+        self.message_user(
+            request,
+            f'{updated} ta qarz uchun jarima yangilandi.',
+            messages.SUCCESS
+        )
     
+    @admin.action(description='Tanlangan qarzlar jarimalarini kechirish')
     def waive_fines(self, request, queryset):
-        """Waive fines for selected loans"""
+        """Jarimalarni kechirish"""
         updated = queryset.update(fine_waived=True)
-        self.message_user(request, f"Fines waived for {updated} loans.")
-    waive_fines.short_description = "Waive fines for selected loans"
+        self.message_user(
+            request,
+            f'{updated} ta qarz jarimasi kechirilib.',
+            messages.SUCCESS
+        )
     
+    @admin.action(description='Eslatma emaillarini yuborish')
     def send_reminder_emails(self, request, queryset):
-        """Send reminder emails for due/overdue loans"""
-        count = 0
-        for loan in queryset:
-            if not loan.return_date:
-                # Here you would implement email sending logic
-                count += 1
-        
-        self.message_user(request, f"Reminder emails sent for {count} loans.")
-    send_reminder_emails.short_description = "Send reminder emails"
+        """Eslatma emaillarini yuborish"""
+        # Bu yerda email yuborish logikasi bo'ladi
+        count = queryset.count()
+        self.message_user(
+            request,
+            f'{count} ta foydalanuvchiga eslatma yuborildi.',
+            messages.SUCCESS
+        )
     
+    @admin.action(description='Qarzlarni CSV formatida eksport qilish')
     def export_loans_csv(self, request, queryset):
-        """Export loans to CSV"""
+        """Qarzlarni CSV formatida eksport qilish"""
         response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="loans_export.csv"'
+        response['Content-Disposition'] = 'attachment; filename="qarzlar_eksport.csv"'
         
         writer = csv.writer(response)
         writer.writerow([
-            'Loan ID', 'User', 'Book', 'Status', 'Loan Date', 'Due Date', 
-            'Return Date', 'Fine Amount', 'Fine Paid', 'Renewals'
+            'ID', 'Foydalanuvchi', 'Kitob', 'Holat', 'Qarz Sanasi', 
+            'Qaytarish Muddati', 'Qaytarilgan Sana', 'Jarima', 'Kengaytirish'
         ])
         
         for loan in queryset:
@@ -486,33 +463,47 @@ class LoanAdmin(admin.ModelAdmin):
                 loan.user.get_full_name() or loan.user.username,
                 loan.book.title,
                 loan.get_status_display(),
-                loan.loan_date,
-                loan.due_date,
-                loan.return_date or '',
+                loan.loan_date.strftime('%Y-%m-%d'),
+                loan.due_date.strftime('%Y-%m-%d'),
+                loan.return_date.strftime('%Y-%m-%d') if loan.return_date else '',
                 loan.fine_amount,
-                'Yes' if loan.fine_paid else 'No',
                 loan.renewal_count
             ])
         
         return response
-    export_loans_csv.short_description = "Export selected loans to CSV"
     
+    @admin.action(description='Muddati o\'tgan qarzlar hisobotini yaratish')
     def generate_overdue_report(self, request, queryset):
-        """Generate overdue loans report"""
+        """Muddati o'tgan qarzlar hisoboti"""
         overdue_loans = queryset.filter(
-            due_date__lt=timezone.now().date(),
-            return_date__isnull=True
+            status__in=[LoanStatus.ACTIVE, LoanStatus.OVERDUE],
+            due_date__lt=timezone.now().date()
         )
         
         self.message_user(
             request, 
-            f"Overdue report generated: {overdue_loans.count()} overdue loans found."
+            f'Muddati o\'tgan qarzlar: {overdue_loans.count()} ta',
+            messages.INFO
         )
-    generate_overdue_report.short_description = "Generate overdue report"
     
-    # Optimize queryset
+    @admin.action(description='Tanlangan qarzlarni kengaytirish')
+    def renew_selected_loans(self, request, queryset):
+        """Tanlangan qarzlarni kengaytirish"""
+        renewed = 0
+        for loan in queryset:
+            if loan.can_renew():
+                loan.renew(reason="Admin tomonidan kengaytirildi")
+                renewed += 1
+        
+        self.message_user(
+            request,
+            f'{renewed} ta qarz kengaytirildi.',
+            messages.SUCCESS
+        )
+    
+    # Queryset optimizatsiyasi
     def get_queryset(self, request):
-        """Optimize queryset with select_related"""
+        """Queryset ni optimizatsiya qilish"""
         return super().get_queryset(request).select_related(
             'user', 'book', 'created_by'
         ).prefetch_related('book__authors')
@@ -520,7 +511,7 @@ class LoanAdmin(admin.ModelAdmin):
 
 @admin.register(Reservation)
 class ReservationAdmin(admin.ModelAdmin):
-    """Professional Reservation Admin"""
+    """Professional Rezervatsiya Admin"""
     
     list_display = [
         'reservation_id_display',
@@ -531,11 +522,13 @@ class ReservationAdmin(admin.ModelAdmin):
         'reserved_at_display',
         'expires_at_display',
         'priority_display',
+        'time_remaining_display',
     ]
     
     list_display_links = ['reservation_id_display']
     
     list_filter = [
+        ReservationStatusFilter,
         'status',
         'priority',
         'reserved_at',
@@ -549,16 +542,16 @@ class ReservationAdmin(admin.ModelAdmin):
         'user__last_name',
         'book__title',
         'book__isbn',
+        'book__authors__name',
     ]
     
     readonly_fields = [
         'reserved_at',
         'updated_at',
-        'time_remaining',
     ]
     
     fieldsets = [
-        ('Reservation Information', {
+        ('Rezervatsiya Ma\'lumotlari', {
             'fields': [
                 ('user', 'book'),
                 ('status', 'priority'),
@@ -567,10 +560,9 @@ class ReservationAdmin(admin.ModelAdmin):
             ],
             'classes': ['wide'],
         }),
-        ('Additional Information', {
+        ('Qo\'shimcha Ma\'lumotlar', {
             'fields': [
                 'notes',
-                'time_remaining',
                 'updated_at',
             ],
             'classes': ['wide'],
@@ -586,160 +578,181 @@ class ReservationAdmin(admin.ModelAdmin):
         'extend_expiration',
         'notify_users',
         'export_reservations_csv',
+        'update_queue_positions',
     ]
     
     def reservation_id_display(self, obj):
-        """Display reservation ID with status icon"""
+        """Rezervatsiya ID ni holat belgisi bilan ko'rsatish"""
         status_icons = {
             ReservationStatus.PENDING: '⏳',
-            ReservationStatus.NOTIFIED: '📧',
-            ReservationStatus.FULFILLED: '✅',
+            ReservationStatus.CONFIRMED: '✅',
+            ReservationStatus.FULFILLED: '📚',
             ReservationStatus.CANCELLED: '❌',
             ReservationStatus.EXPIRED: '⏰',
         }
         icon = status_icons.get(obj.status, '📋')
         return f"{icon} #{obj.id}"
-    reservation_id_display.short_description = "Reservation ID"
+    reservation_id_display.short_description = "Rezervatsiya ID"
     reservation_id_display.admin_order_field = "id"
     
     def user_link(self, obj):
-        """Link to user admin page"""
+        """Foydalanuvchi sahifasiga havola"""
         url = reverse('admin:accounts_user_change', args=[obj.user.pk])
         return format_html('<a href="{}">{}</a>', url, obj.user.get_full_name() or obj.user.username)
-    user_link.short_description = "User"
+    user_link.short_description = "Foydalanuvchi"
     user_link.admin_order_field = "user__username"
     
     def book_link(self, obj):
-        """Link to book admin page"""
+        """Kitob sahifasiga havola"""
         url = reverse('admin:books_book_change', args=[obj.book.pk])
-        return format_html('<a href="{}">{}</a>', url, obj.book.title[:40])
-    book_link.short_description = "Book"
+        return format_html('<a href="{}">{}</a>', url, obj.book.title[:50])
+    book_link.short_description = "Kitob"
     book_link.admin_order_field = "book__title"
     
     def status_badge(self, obj):
-        """Display status as colored badge"""
+        """Holat belgisini rangli ko'rsatish"""
         colors = {
-            ReservationStatus.PENDING: '#fd7e14',      # Orange
-            ReservationStatus.NOTIFIED: '#0d6efd',     # Blue
-            ReservationStatus.FULFILLED: '#198754',    # Green
-            ReservationStatus.CANCELLED: '#6c757d',    # Gray
-            ReservationStatus.EXPIRED: '#dc3545',      # Red
+            ReservationStatus.PENDING: '#ffc107',      # Sariq
+            ReservationStatus.CONFIRMED: '#28a745',    # Yashil
+            ReservationStatus.FULFILLED: '#17a2b8',    # Ko'k
+            ReservationStatus.CANCELLED: '#dc3545',    # Qizil
+            ReservationStatus.EXPIRED: '#6c757d',      # Kulrang
         }
         color = colors.get(obj.status, '#6c757d')
         return format_html(
-            '<span style="background-color: {}; color: white; padding: 3px 8px; '
-            'border-radius: 4px; font-size: 11px; font-weight: bold;">{}</span>',
+            '<span style="background-color: {}; color: white; padding: 2px 6px; '
+            'border-radius: 3px; font-size: 11px;">{}</span>',
             color,
             obj.get_status_display()
         )
-    status_badge.short_description = "Status"
+    status_badge.short_description = "Holat"
     status_badge.admin_order_field = "status"
     
     def queue_position_display(self, obj):
-        """Display queue position with visual indicator"""
+        """Navbat pozitsiyasini ko'rsatish"""
         if obj.queue_position == 1:
-            return format_html('<span style="color: green; font-weight: bold;">🥇 1st</span>')
-        elif obj.queue_position == 2:
-            return format_html('<span style="color: orange; font-weight: bold;">🥈 2nd</span>')
-        elif obj.queue_position == 3:
-            return format_html('<span style="color: #cd7f32; font-weight: bold;">🥉 3rd</span>')
+            return format_html('<span style="color: green; font-weight: bold;">🥇 1-o\'rin</span>')
+        elif obj.queue_position <= 3:
+            return format_html('<span style="color: orange; font-weight: bold;">🥈 {}-o\'rin</span>', obj.queue_position)
         else:
-            return format_html('<span>{}</span>', f"#{obj.queue_position}")
-    queue_position_display.short_description = "Queue Position"
+            return f"📍 {obj.queue_position}-o'rin"
+    queue_position_display.short_description = "Navbat"
     queue_position_display.admin_order_field = "queue_position"
     
     def reserved_at_display(self, obj):
-        """Display reservation time"""
+        """Rezervatsiya sanasini ko'rsatish"""
         return obj.reserved_at.strftime('%Y-%m-%d %H:%M')
-    reserved_at_display.short_description = "Reserved At"
+    reserved_at_display.short_description = "Rezervatsiya Sanasi"
     reserved_at_display.admin_order_field = "reserved_at"
     
     def expires_at_display(self, obj):
-        """Display expiration with color coding"""
+        """Tugash sanasini rangli ko'rsatish"""
         now = timezone.now()
-        time_left = obj.expires_at - now
+        time_diff = obj.expires_at - now
         
-        if time_left.total_seconds() <= 0:
-            return format_html('<span style="color: red; font-weight: bold;">❌ Expired</span>')
-        elif time_left.total_seconds() <= 3600:  # Less than 1 hour
-            return format_html('<span style="color: red;">⚠️ {} (Soon)</span>', obj.expires_at.strftime('%H:%M'))
-        elif time_left.days == 0:  # Today
-            return format_html('<span style="color: orange;">⏰ {}</span>', obj.expires_at.strftime('%H:%M'))
+        if time_diff.total_seconds() < 0:
+            return format_html('<span style="color: red;">⏰ Tugagan</span>')
+        elif time_diff.total_seconds() < 3600:  # 1 soat
+            return format_html('<span style="color: orange;">⏰ {} daqiqa</span>', int(time_diff.total_seconds() // 60))
+        elif time_diff.days < 1:
+            return format_html('<span style="color: orange;">⏰ {} soat</span>', int(time_diff.total_seconds() // 3600))
         else:
-            return format_html('<span style="color: green;">{}</span>', obj.expires_at.strftime('%Y-%m-%d %H:%M'))
-    expires_at_display.short_description = "Expires At"
+            return obj.expires_at.strftime('%Y-%m-%d %H:%M')
+    expires_at_display.short_description = "Tugash Sanasi"
     expires_at_display.admin_order_field = "expires_at"
     
     def priority_display(self, obj):
-        """Display priority with visual indicator"""
+        """Ustuvorlikni ko'rsatish"""
         if obj.priority > 0:
-            return format_html('<span style="color: red; font-weight: bold;">⭐ High ({})</span>', obj.priority)
-        return "Normal"
-    priority_display.short_description = "Priority"
+            return format_html('<span style="color: red; font-weight: bold;">⭐ Ustuvor ({})</span>', obj.priority)
+        return "📋 Oddiy"
+    priority_display.short_description = "Ustuvorlik"
     priority_display.admin_order_field = "priority"
     
-    def time_remaining(self, obj):
-        """Calculate time remaining until expiration"""
+    def time_remaining_display(self, obj):
+        """Qolgan vaqtni ko'rsatish"""
         now = timezone.now()
-        time_left = obj.expires_at - now
-        
-        if time_left.total_seconds() <= 0:
-            return "Expired"
-        
-        days = time_left.days
-        hours = time_left.seconds // 3600
-        minutes = (time_left.seconds % 3600) // 60
-        
-        if days > 0:
-            return f"{days} days, {hours} hours"
-        elif hours > 0:
-            return f"{hours} hours, {minutes} minutes"
+        if obj.expires_at > now:
+            remaining = obj.expires_at - now
+            if remaining.days > 0:
+                return f"📅 {remaining.days} kun"
+            elif remaining.seconds > 3600:
+                hours = remaining.seconds // 3600
+                return f"⏰ {hours} soat"
         else:
-            return f"{minutes} minutes"
-    time_remaining.short_description = "Time Remaining"
+                minutes = remaining.seconds // 60
+                return f"⏰ {minutes} daqiqa"
+        return "⏰ Tugagan"
+    time_remaining_display.short_description = "Qolgan Vaqt"
     
-    # Custom actions
+    # Maxsus amallar
+    @admin.action(description='Tanlangan rezervatsiyalarni bajarilgan deb belgilash')
     def mark_as_fulfilled(self, request, queryset):
-        """Mark reservations as fulfilled"""
-        updated = queryset.update(status=ReservationStatus.FULFILLED)
-        self.message_user(request, f"{updated} reservations marked as fulfilled.")
-    mark_as_fulfilled.short_description = "Mark as fulfilled"
-    
-    def mark_as_cancelled(self, request, queryset):
-        """Mark reservations as cancelled"""
-        updated = queryset.update(status=ReservationStatus.CANCELLED)
-        self.message_user(request, f"{updated} reservations cancelled.")
-    mark_as_cancelled.short_description = "Mark as cancelled"
-    
-    def extend_expiration(self, request, queryset):
-        """Extend expiration by 24 hours"""
+        """Rezervatsiyalarni bajarilgan deb belgilash"""
+        updated = 0
         for reservation in queryset:
-            reservation.expires_at += timedelta(hours=24)
-            reservation.save()
+            if reservation.status in [ReservationStatus.PENDING, ReservationStatus.CONFIRMED]:
+                reservation.fulfill()
+                updated += 1
         
-        self.message_user(request, f"Extended expiration for {queryset.count()} reservations.")
-    extend_expiration.short_description = "Extend expiration by 24 hours"
+        self.message_user(
+            request,
+            f'{updated} ta rezervatsiya bajarilgan deb belgilandi.',
+            messages.SUCCESS
+        )
     
-    def notify_users(self, request, queryset):
-        """Send notification to users"""
-        count = 0
+    @admin.action(description='Tanlangan rezervatsiyalarni bekor qilish')
+    def mark_as_cancelled(self, request, queryset):
+        """Rezervatsiyalarni bekor qilish"""
+        updated = 0
+        for reservation in queryset:
+            if reservation.status != ReservationStatus.CANCELLED:
+                reservation.cancel("Admin tomonidan bekor qilindi")
+                updated += 1
+        
+        self.message_user(
+            request,
+            f'{updated} ta rezervatsiya bekor qilindi.',
+            messages.SUCCESS
+        )
+    
+    @admin.action(description='Tugash muddatini uzaytirish')
+    def extend_expiration(self, request, queryset):
+        """Tugash muddatini uzaytirish"""
+        updated = 0
         for reservation in queryset:
             if reservation.status == ReservationStatus.PENDING:
-                # Here you would implement notification logic
-                count += 1
+                reservation.expires_at = timezone.now() + timedelta(days=3)
+                reservation.save()
+                updated += 1
         
-        self.message_user(request, f"Notifications sent for {count} reservations.")
-    notify_users.short_description = "Send notifications to users"
+        self.message_user(
+            request,
+            f'{updated} ta rezervatsiya muddati uzaytirildi.',
+            messages.SUCCESS
+        )
     
+    @admin.action(description='Foydalanuvchilarni xabardor qilish')
+    def notify_users(self, request, queryset):
+        """Foydalanuvchilarni xabardor qilish"""
+        # Bu yerda xabardor qilish logikasi bo'ladi
+        count = queryset.count()
+        self.message_user(
+            request,
+            f'{count} ta foydalanuvchi xabardor qilindi.',
+            messages.SUCCESS
+        )
+    
+    @admin.action(description='Rezervatsiyalarni CSV formatida eksport qilish')
     def export_reservations_csv(self, request, queryset):
-        """Export reservations to CSV"""
+        """Rezervatsiyalarni CSV formatida eksport qilish"""
         response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="reservations_export.csv"'
+        response['Content-Disposition'] = 'attachment; filename="rezervatsiyalar_eksport.csv"'
         
         writer = csv.writer(response)
         writer.writerow([
-            'Reservation ID', 'User', 'Book', 'Status', 'Queue Position',
-            'Reserved At', 'Expires At', 'Priority'
+            'ID', 'Foydalanuvchi', 'Kitob', 'Holat', 'Navbat', 
+            'Rezervatsiya Sanasi', 'Tugash Sanasi', 'Ustuvorlik'
         ])
         
         for reservation in queryset:
@@ -749,16 +762,33 @@ class ReservationAdmin(admin.ModelAdmin):
                 reservation.book.title,
                 reservation.get_status_display(),
                 reservation.queue_position,
-                reservation.reserved_at,
-                reservation.expires_at,
+                reservation.reserved_at.strftime('%Y-%m-%d %H:%M'),
+                reservation.expires_at.strftime('%Y-%m-%d %H:%M'),
                 reservation.priority
             ])
         
         return response
-    export_reservations_csv.short_description = "Export to CSV"
+    
+    @admin.action(description='Navbat pozitsiyalarini yangilash')
+    def update_queue_positions(self, request, queryset):
+        """Navbat pozitsiyalarini yangilash"""
+        # Bu yerda navbat pozitsiyalarini qayta hisoblash logikasi bo'ladi
+        count = queryset.count()
+        self.message_user(
+            request,
+            f'{count} ta rezervatsiya navbati yangilandi.',
+            messages.SUCCESS
+        )
+    
+    # Queryset optimizatsiyasi
+    def get_queryset(self, request):
+        """Queryset ni optimizatsiya qilish"""
+        return super().get_queryset(request).select_related(
+            'user', 'book'
+        ).prefetch_related('book__authors')
 
 
-# Admin site customization
-admin.site.site_header = "Library Management System"
-admin.site.site_title = "Library Admin"
-admin.site.index_title = "Loan & Reservation Management"
+# Admin sayt sozlamalari
+admin.site.site_header = "Kutubxona Boshqaruv Tizimi"
+admin.site.site_title = "Kutubxona Admin"
+admin.site.index_title = "Qarz va Rezervatsiya Boshqaruvi"

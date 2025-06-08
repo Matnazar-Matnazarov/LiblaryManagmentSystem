@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Management System - Monitoring Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .metric-card {
+            transition: all 0.3s ease;
+        }
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .loading {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center">
+                    <h1 class="text-2xl font-bold text-gray-900">📊 Library Monitoring Dashboard</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm text-gray-500" id="lastUpdate">Last updated: Loading...</span>
+                    <button onclick="refreshData()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        🔄 Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- System Overview -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">System Overview</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="systemOverview">
+                <!-- Cards will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Detailed Metrics -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Users Metrics -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">👥 User Metrics</h3>
+                <div id="userMetrics" class="space-y-4">
+                    <div class="loading bg-gray-200 h-4 rounded"></div>
+                    <div class="loading bg-gray-200 h-4 rounded"></div>
+                    <div class="loading bg-gray-200 h-4 rounded"></div>
+                </div>
+            </div>
+
+            <!-- Books Metrics -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">📚 Book Metrics</h3>
+                <div id="bookMetrics" class="space-y-4">
+                    <div class="loading bg-gray-200 h-4 rounded"></div>
+                    <div class="loading bg-gray-200 h-4 rounded"></div>
+                    <div class="loading bg-gray-200 h-4 rounded"></div>
+                </div>
+            </div>
+
+            <!-- Loans Metrics -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">📋 Loan Metrics</h3>
+                <div id="loanMetrics" class="space-y-4">
+                    <div class="loading bg-gray-200 h-4 rounded"></div>
+                    <div class="loading bg-gray-200 h-4 rounded"></div>
+                    <div class="loading bg-gray-200 h-4 rounded"></div>
+                </div>
+            </div>
+
+            <!-- Performance Metrics -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">⚡ Performance</h3>
+                <div id="performanceMetrics" class="space-y-4">
+                    <div class="loading bg-gray-200 h-4 rounded"></div>
+                    <div class="loading bg-gray-200 h-4 rounded"></div>
+                    <div class="loading bg-gray-200 h-4 rounded"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alerts Section -->
+        <div class="mt-8">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">🚨 System Alerts</h2>
+            <div id="alertsSection" class="bg-white rounded-lg shadow p-6">
+                <div class="loading bg-gray-200 h-4 rounded"></div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Global variables
+        let isAuthenticated = false;
+        let csrfToken = '';
+
+        // Get CSRF token
+        function getCSRFToken() {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                const [name, value] = cookie.trim().split('=');
+                if (name === 'csrftoken') {
+                    return value;
+                }
+            }
+            return '';
+        }
+
+        // Check authentication status
+        async function checkAuth() {
+            try {
+                const response = await fetch('/admin/', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                return response.ok;
+            } catch (error) {
+                return false;
+            }
+        }
+
+        // Fetch monitoring data
+        async function fetchMonitoringData() {
+            try {
+                const response = await fetch('/api/analytics/monitor/system/', {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: {
+                        'X-CSRFToken': getCSRFToken(),
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.status === 403 || response.status === 401) {
+                    showAuthRequired();
+                    return null;
+                }
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching monitoring data:', error);
+                showError('Failed to fetch monitoring data');
+                return null;
+            }
+        }
+
+        // Show authentication required message
+        function showAuthRequired() {
+            document.getElementById('systemOverview').innerHTML = `
+                <div class="col-span-full bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+                    <div class="text-yellow-800">
+                        <h3 class="text-lg font-semibold mb-2">🔐 Authentication Required</h3>
+                        <p class="mb-4">You need to be logged in as an admin to view monitoring data.</p>
+                        <a href="/admin/login/?next=/api/analytics/dashboard/" 
+                           class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                            Login to Admin Panel
+                        </a>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Show error message
+        function showError(message) {
+            document.getElementById('systemOverview').innerHTML = `
+                <div class="col-span-full bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+                    <div class="text-red-800">
+                        <h3 class="text-lg font-semibold mb-2">❌ Error</h3>
+                        <p>${message}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Create metric card
+        function createMetricCard(title, value, icon, status = 'healthy') {
+            const statusColors = {
+                healthy: 'bg-green-100 text-green-800',
+                warning: 'bg-yellow-100 text-yellow-800',
+                critical: 'bg-red-100 text-red-800'
+            };
+
+            return `
+                <div class="metric-card bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">${title}</p>
+                            <p class="text-2xl font-bold text-gray-900">${value}</p>
+                        </div>
+                        <div class="text-3xl">${icon}</div>
+                    </div>
+                    <div class="mt-2">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[status]}">
+                            ${status.charAt(0).toUpperCase() + status.slice(1)}
+                        </span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Update dashboard with data
+        function updateDashboard(data) {
+            if (!data) return;
+
+            // Update system overview
+            const overview = data.system_overview || {};
+            const systemOverviewHTML = `
+                ${createMetricCard('Total Users', overview.users?.total || 0, '👥', overview.users?.status || 'healthy')}
+                ${createMetricCard('Total Books', overview.books?.total || 0, '📚', overview.books?.status || 'healthy')}
+                ${createMetricCard('Active Loans', overview.loans?.active || 0, '📋', overview.loans?.status || 'healthy')}
+                ${createMetricCard('System Health', overview.health_status?.overall ? 'Healthy' : 'Issues', '💚', overview.health_status?.overall ? 'healthy' : 'critical')}
+            `;
+            document.getElementById('systemOverview').innerHTML = systemOverviewHTML;
+
+            // Update detailed metrics (simplified for demo)
+            document.getElementById('userMetrics').innerHTML = `
+                <div class="flex justify-between">
+                    <span>Active Users:</span>
+                    <span class="font-semibold">${overview.users?.active || 0}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Activity Rate:</span>
+                    <span class="font-semibold">${overview.users?.activity_rate || 0}%</span>
+                </div>
+            `;
+
+            document.getElementById('bookMetrics').innerHTML = `
+                <div class="flex justify-between">
+                    <span>Available Books:</span>
+                    <span class="font-semibold">${overview.books?.available || 0}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Availability Rate:</span>
+                    <span class="font-semibold">${overview.books?.availability_rate || 0}%</span>
+                </div>
+            `;
+
+            document.getElementById('loanMetrics').innerHTML = `
+                <div class="flex justify-between">
+                    <span>Overdue Loans:</span>
+                    <span class="font-semibold">${overview.loans?.overdue || 0}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Overdue Rate:</span>
+                    <span class="font-semibold">${overview.loans?.overdue_rate || 0}%</span>
+                </div>
+            `;
+
+            const performance = data.performance_overview || {};
+            document.getElementById('performanceMetrics').innerHTML = `
+                <div class="flex justify-between">
+                    <span>API Response:</span>
+                    <span class="font-semibold">${performance.response_times?.avg_api_response || 0}ms</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>DB Query:</span>
+                    <span class="font-semibold">${performance.response_times?.avg_db_query || 0}ms</span>
+                </div>
+            `;
+
+            // Update alerts
+            const alerts = data.critical_alerts || [];
+            if (alerts.length === 0) {
+                document.getElementById('alertsSection').innerHTML = `
+                    <div class="text-center text-green-600">
+                        <span class="text-2xl">✅</span>
+                        <p class="mt-2">No critical alerts</p>
+                    </div>
+                `;
+            } else {
+                const alertsHTML = alerts.map(alert => `
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-2">
+                        <div class="flex items-center">
+                            <span class="text-red-500 mr-2">⚠️</span>
+                            <span class="text-red-800">${alert}</span>
+                        </div>
+                    </div>
+                `).join('');
+                document.getElementById('alertsSection').innerHTML = alertsHTML;
+            }
+
+            // Update timestamp
+            document.getElementById('lastUpdate').textContent = `Last updated: ${new Date().toLocaleString()}`;
+        }
+
+        // Refresh data
+        async function refreshData() {
+            const data = await fetchMonitoringData();
+            updateDashboard(data);
+        }
+
+        // Initialize dashboard
+        async function initDashboard() {
+            csrfToken = getCSRFToken();
+            await refreshData();
+            
+            // Auto-refresh every 30 seconds
+            setInterval(refreshData, 30000);
+        }
+
+        // Start dashboard when page loads
+        document.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
+</body>
+</html> 

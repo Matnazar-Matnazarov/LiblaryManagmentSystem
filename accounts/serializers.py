@@ -520,4 +520,36 @@ class UserDocumentVerificationSerializer(serializers.Serializer):
         choices=['approved', 'rejected'], 
         required=True
     )
-    notes = serializers.CharField(required=False, allow_blank=True, max_length=500) 
+    notes = serializers.CharField(required=False, allow_blank=True, max_length=500)
+
+
+# Auth-specific serializers
+class LogoutSerializer(serializers.Serializer):
+    """Serializer for logout endpoint"""
+    refresh = serializers.CharField(
+        required=True,
+        help_text="Refresh token to blacklist"
+    )
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    """Serializer for password reset request"""
+    email = serializers.EmailField(
+        required=True,
+        help_text="User email address"
+    )
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    """Serializer for password reset confirmation"""
+    new_password = serializers.CharField(
+        required=True,
+        min_length=8,
+        validators=[validate_password],
+        help_text="New password (minimum 8 characters)"
+    )
+
+
+class ResendVerificationSerializer(serializers.Serializer):
+    """Serializer for resend verification email"""
+    pass 

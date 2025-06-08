@@ -48,6 +48,10 @@ isort==6.0.1
 flake8==7.2.0
 django-stubs
 
+# Admin Enhancements
+django-import-export   
+django-rangefilter
+
 # Production
 gunicorn
 whitenoise
@@ -61,4 +65,4 @@ sendgrid
 
 
 # Environment
-environs==14.2.0
+environs
