@@ -446,7 +446,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Matnazar Matnazarov**
 - Email: matnazarmatnazarov3@gmail.com
-- GitHub: [@matnazar](https://github.com/matnazar)
+- GitHub: [@Matnazar-Matnazarov/](https://github.com/Matnazar-Matnazarov)
 
 ## 🙏 Acknowledgments
 
